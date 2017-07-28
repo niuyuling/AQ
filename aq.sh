@@ -1,8 +1,15 @@
 #!/bin/bash
 #AQ
-set -x
+#set -x
+path() {
+    export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+}
 init() {
+    initdate
+    check_os
+    helloworld
     check_root
+    #test $OS = "ubuntu" && echo -ne Debian Run ?\\n ; exit
     PWD=$(pwd)
     SRC=$PWD/AQ
     QEMU_PREFIX=/data/local/aixiao.qemu
@@ -26,6 +33,27 @@ init() {
     --enable-coroutine-pool --enable-tpm --enable-libssh2 \
     --enable-replication --disable-libiscsi --disable-libnfs \
     --disable-libusb"
+    QEMU_CONFIGURE_2_8_0="./configure --prefix=${QEMU_PREFIX} --target-list=arm-linux-user,arm-softmmu \
+    --static \
+    --enable-docs --enable-guest-agent --enable-gcrypt \
+    --enable-vnc --enable-vnc-jpeg --enable-vnc-png \
+    --enable-fdt --enable-bluez --enable-kvm \
+    --enable-colo --enable-linux-aio --enable-cap-ng \
+    --enable-attr --enable-vhost-net --enable-bzip2 \
+    --enable-coroutine-pool --enable-tpm --enable-libssh2 \
+    --enable-replication --disable-libiscsi --disable-libnfs \
+    --disable-libusb"
+    QEMU_CONFIGURE_2_8_1_1="./configure --prefix=${QEMU_PREFIX} --target-list=arm-linux-user,arm-softmmu \
+    --static \
+    --enable-docs --enable-guest-agent --enable-gcrypt \
+    --enable-vnc --enable-vnc-jpeg --enable-vnc-png \
+    --enable-fdt --enable-bluez --enable-kvm \
+    --enable-colo --enable-linux-aio --enable-cap-ng \
+    --enable-attr --enable-vhost-net --enable-bzip2 \
+    --enable-coroutine-pool --enable-tpm --enable-libssh2 \
+    --enable-replication --disable-libiscsi --disable-libnfs \
+    --disable-libusb"
+
     #pkg_install
     #src_download
     #tar_extract
@@ -36,8 +64,46 @@ init() {
         tar_extract
         install qemu
     else
-        #git_download
+        #git_clone
         install qemu-git
+    fi
+}
+
+initdate() {
+    init_date=`date +%s`
+}
+
+helloworld() {
+    vvv=$(echo $OS_VER | cut -b1)
+    test $OS = "ubuntu" && vvv=$(echo $OS_VER | awk -F '.' '{print$1}')
+    cat <<HELLOWORLD
+-----------------------------
+Web: AIXIAO.ME
+AQ: $VER for $OS $vvv
+Qq: 1605227279
+Qemail: 1605227279@qq.com
+Author: nan13643966916@gmail.com
+Android Qemu | Linux Qemu
+-----------------------------
+HELLOWORLD
+}
+
+check_os() {
+    if cat /etc/issue | grep -i 'ubuntu' >> /dev/null 2>&1 ; then
+        OS=ubuntu
+        OS_VER=$(cat /etc/issue | head -n1 | awk '{print$2}')
+        echo -e SYSTEM: UBUNTU $(uname -m) ${OS_VER}\\nKERNEL: $(uname -sr)
+    elif test -f /etc/debian_version ; then
+        OS=debian
+        OS_VER=$(cat /etc/debian_version)
+        echo -e SYSTEM: DEBIAN $(uname -m) ${OS_VER}\\nKERNEL: $(uname -sr)
+    elif test -f /etc/centos-release ; then
+        OS=centos
+        OS_VER=$(cat /etc/centos-release | grep -o -E '[0-9.]{3,}') 2>> /dev/null
+        echo -e SYSTEM: CENTOS $(uname -m) ${OS_VER}\\nKERNEL: $(uname -sr)
+    else
+        echo The system does not support
+        exit
     fi
 }
 
@@ -91,7 +157,7 @@ pkg_install() {
     echo -n "Debian apt install "
     #DEBIAN_FRONTEND=noninteractive bg_wait apt-get -qqy --force-yes install cmake autoconf pkg-config locales-all build-essential $APT_1 $APT_2 $APT_3
     #bg_wait apt-get build-dep qemu-system
-    DEBIAN_FRONTEND=noninteractive bg_wait apt-get -qqy --force-yes build-dep qemu-system
+    DEBIAN_FRONTEND=noninteractive bg_wait apt-get -qqy --force-yes build-dep qemu-system build-essential
     if test $(cat $BGEXEC_EXIT_STATUS_FILE) != "0" ; then
         echo -ne fail\\n-----------------------------\\n
         exit
@@ -116,7 +182,7 @@ src_download() {
 
 tar_extract() {
     if ! test -d $QEMU_SRC_DIR; then
-        echo -n +Extract Qemu ....
+        echo -n +Extract QEMU ....
         tar -axf $QEMU_TAR_SRC -C $SRC >> /dev/null 2>&1
         if ! test -d $QEMU_SRC_DIR ; then
             echo -ne \\b\\b\\b\\bfail\\n
@@ -127,7 +193,7 @@ tar_extract() {
     fi
 }
 
-git_download() {
+git_clone() {
     if ! test -d $QEMU_GIT_SRC_DIR ; then
         echo -n "GIT PULL QEMU "
         cd $SRC
@@ -144,8 +210,20 @@ git_download() {
 }
 
 c_configure() {
-    test "$QEMU_VERSION" = "2.8.0" && sed -i '1977i printf(\"AIXIAO.ME Compile Links, EMAIL 1605227279@QQ.COM\\n\");' vl.c
-    test "$QEMU_VERSION" = "2.8.1.1" && sed -i '1977i printf(\"AIXIAO.ME Compile Links, EMAIL 1605227279@QQ.COM\\n\");' vl.c
+    #test "$QEMU_VERSION" = "2.8.0" && sed -i '1977i printf(\"AIXIAO.ME Compile Links, EMAIL 1605227279@QQ.COM\\n\");' vl.c
+    #test "$QEMU_VERSION" = "2.8.1.1" && sed -i '1977i printf(\"AIXIAO.ME Compile Links, EMAIL 1605227279@QQ.COM\\n\");' vl.c
+    a="'"
+    b="\""
+    c="\\"
+    l=$(grep -ne "static void version(void)" vl.c | cut -d : -f1)
+    l=$((l+2))
+    #x=$(eval "sed -i ${a}${l}i printf(${c}${b}AIXIAO.ME Compile Links, EMAIL 1605227279@QQ.COM${c}${c}n${c}${b});${a} vl.c")
+    #$x
+    if test "$(grep "AIXIAO.ME" vl.c ; echo $?)" = "1" ; then
+        eval "sed -i ${a}${l}i printf(${c}${b}AIXIAO.ME Compile Links, EMAIL 1605227279@QQ.COM${c}${c}n${c}${b});${a} vl.c"
+    else
+        exit
+    fi
 }
 
 configure() {
@@ -153,30 +231,10 @@ configure() {
         qemu)
             case $2 in
                 "2.8.0")
-    #./configure --prefix=/data/local/aixiao.qemu --target-list=arm-linux-user,arm-softmmu
-    ./configure --prefix=${QEMU_PREFIX} --target-list=arm-linux-user,arm-softmmu \
-    --static \
-    --enable-docs --enable-guest-agent --enable-gcrypt \
-    --enable-vnc --enable-vnc-jpeg --enable-vnc-png \
-    --enable-fdt --enable-bluez --enable-kvm \
-    --enable-colo --enable-linux-aio --enable-cap-ng \
-    --enable-attr --enable-vhost-net --enable-bzip2 \
-    --enable-coroutine-pool --enable-tpm --enable-libssh2 \
-    --enable-replication --disable-libiscsi --disable-libnfs \
-    --disable-libusb
+    ${QEMU_CONFIGURE_2_8_0}
                 ;;
                 "2.8.1.1")
-    #./configure --prefix=/data/local/aixiao.qemu --target-list=arm-linux-user,arm-softmmu
-    ./configure --prefix=${QEMU_PREFIX} --target-list=arm-linux-user,arm-softmmu \
-    --static \
-    --enable-docs --enable-guest-agent --enable-gcrypt \
-    --enable-vnc --enable-vnc-jpeg --enable-vnc-png \
-    --enable-fdt --enable-bluez --enable-kvm \
-    --enable-colo --enable-linux-aio --enable-cap-ng \
-    --enable-attr --enable-vhost-net --enable-bzip2 \
-    --enable-coroutine-pool --enable-tpm --enable-libssh2 \
-    --enable-replication --disable-libiscsi --disable-libnfs \
-    --disable-libusb
+    ./configure --prefix=/data/local/aixiao.qemu --target-list=arm-linux-user,arm-softmmu
                 ;;
                 "2.9.0")
 
@@ -196,11 +254,19 @@ install() {
             cd $QEMU_SRC_DIR
             configure $1 $QEMU_VERSION >> /dev/null 2>&1 &
             echo -n Configure QEMU\ ;wait_pid $!
-            if test -d $QEMU_SRC_DIR/Makefile ; then
+            if test -f $QEMU_SRC_DIR/Makefile ; then
                 echo -ne done\\n
             else
                 echo -ne fail\\n
                 exit
+            fi
+            c_configure >> /dev/null 2>&1 &
+            echo -n Configure QEMU C File\ ;wait_pid $!
+            if test "$(grep "AIXIAO.ME" vl.c ; echo $?)" = "1" ; then
+                echo -ne fail\\n
+                exit
+            else
+                echo -ne done\\n
             fi
             make $MAKE_J >> /dev/null 2>&1 &
             echo -n Make QEMU\ ;wait_pid $!
@@ -220,31 +286,34 @@ install() {
             fi
         ;;
         qemu-git)
+            qemu-git() {
             cd $QEMU_GIT_SRC_DIR
-            configure $1 >> /dev/null 2>&1 &
+            configure $1 $QEMU_VERSION >> /dev/null 2>&1 &
             echo -n Configure QEMU\ ;wait_pid $!
-            if test -d $QEMU_GIT_SRC_DIR/Makefile ; then
+            if test -f $QEMU_GIT_SRC_DIR/Makefile ; then
                 echo -ne done\\n
             else
                 echo -ne fail\\n
                 exit
             fi
             make $MAKE_J >> /dev/null 2>&1 &
-            echo -n Make Qemu\ ;wait_pid $!
+            echo -n Make QEMU\ ;wait_pid $!
             if test -x $QEMU_GIT_SRC_DIR/arm-softmmu/qemu-system-arm ; then
                 echo -ne done\\n
             else
                 echo -ne fail\\n
                 exit
             fi
-            #make install >> /dev/null 2>&1 &
-            #echo -n Make install Qemu\ ;wait_pid $!
-            #if test -x $QEMU_PREFIX/bin/qemu-system-arm ; then
-            #    echo -ne done\\n
-            #else
-            #    echo -ne fail\\n
-            #    exit
-            #fi
+            make install >> /dev/null 2>&1 &
+            echo -n Make install QEMU\ ;wait_pid $!
+            if test -x $QEMU_PREFIX/bin/qemu-system-arm ; then
+                echo -ne done\\n
+            else
+                echo -ne fail\\n
+                exit
+            fi
+            }
+
         ;;
     esac
 }
@@ -278,7 +347,8 @@ HELP
         ;;
     esac
 }
-
+path
+VER=1.01
 for((i=1;i<=$#;i++)); do
     ini_cfg=${!i}
     ini_cfg_a=`echo $ini_cfg | sed -r s/^-?-?.*=//`
