@@ -14,7 +14,9 @@ init() {
     SRC=$PWD/AQ
     QEMU_PREFIX=/data/local/aixiao.qemu
 
+    QEMU_VERSION="2.8.0"
     QEMU_VERSION="2.8.1.1"
+    QEMU_VERSION="2.10.0-rc0"
     #QEMU_VERSION=${QEMU_VERSION:+qemu_version}
     test -n "$qemu_version" && QEMU_VERSION=$qemu_version
     QEMU_TAR_SRC=${PWD}/AQ/qemu-${QEMU_VERSION}.tar.xz
@@ -23,41 +25,57 @@ init() {
     QEMU_SRC_DIR=${PWD}/AQ/qemu-${QEMU_VERSION}
     QEMU_GIT_SRC_DIR=${PWD}/qemu
 
-    QEMU_CONFIGURE="./configure --prefix=${QEMU_PREFIX} --target-list=arm-linux-user,arm-softmmu \
+    QEMU_CONFIGURE_2_8_0="
+    ./configure --prefix=${QEMU_PREFIX} --target-list=arm-linux-user,arm-softmmu \
     --static \
-    --enable-docs --enable-guest-agent --enable-gcrypt \
-    --enable-vnc --enable-vnc-jpeg --enable-vnc-png \
+
+    --enable-docs --enable-guest-agent \
+
+    --enable-gcrypt --enable-vnc --enable-vnc-jpeg --enable-vnc-png \
     --enable-fdt --enable-bluez --enable-kvm \
-    --enable-colo --enable-linux-aio --enable-cap-ng \
-    --enable-attr --enable-vhost-net --enable-bzip2 \
-    --enable-coroutine-pool --enable-tpm --enable-libssh2 \
-    --enable-replication --disable-libiscsi --disable-libnfs \
-    --disable-libusb"
-    QEMU_CONFIGURE_2_8_0="./configure --prefix=${QEMU_PREFIX} --target-list=arm-linux-user,arm-softmmu \
+    --enable-colo --enable-linux-aio --enable-cap-ng --enable-attr --enable-vhost-net --enable-bzip2 \
+
+    --enable-coroutine-pool --enable-tpm --enable-libssh2 --enable-replication \
+    --disable-libiscsi --disable-libnfs --disable-libusb \
+    "
+    QEMU_CONFIGURE_2_8_1_1="
+    ./configure --prefix=${QEMU_PREFIX} --target-list=arm-linux-user,arm-softmmu \
     --static \
-    --enable-docs --enable-guest-agent --enable-gcrypt \
-    --enable-vnc --enable-vnc-jpeg --enable-vnc-png \
+
+    --enable-docs --enable-guest-agent \
+
+    --enable-gcrypt --enable-vnc --enable-vnc-jpeg --enable-vnc-png \
     --enable-fdt --enable-bluez --enable-kvm \
-    --enable-colo --enable-linux-aio --enable-cap-ng \
-    --enable-attr --enable-vhost-net --enable-bzip2 \
-    --enable-coroutine-pool --enable-tpm --enable-libssh2 \
-    --enable-replication --disable-libiscsi --disable-libnfs \
-    --disable-libusb"
-    QEMU_CONFIGURE_2_8_1_1="./configure --prefix=${QEMU_PREFIX} --target-list=arm-linux-user,arm-softmmu \
+    --enable-colo --enable-linux-aio --enable-cap-ng --enable-attr --enable-vhost-net --enable-bzip2 \
+
+    --enable-coroutine-pool --enable-tpm --enable-libssh2 --enable-replication \
+    --disable-libiscsi --disable-libnfs --disable-libusb \
+    "
+    QEMU_CONFIGURE_2_10_0_RC0="
+    ./configure --prefix=${QEMU_PREFIX} --target-list=arm-linux-user,arm-softmmu,i386-linux-user,i386-softmmu \
     --static \
-    --enable-docs --enable-guest-agent --enable-gcrypt \
+
+    --enable-docs \
+    --enable-guest-agent \
+
+    --disable-sdl --disable-gtk --disable-vte --disable-curses --disable-cocoa \
+    --enable-gcrypt \
     --enable-vnc --enable-vnc-jpeg --enable-vnc-png \
-    --enable-fdt --enable-bluez --enable-kvm \
-    --enable-colo --enable-linux-aio --enable-cap-ng \
-    --enable-attr --enable-vhost-net --enable-bzip2 \
-    --enable-coroutine-pool --enable-tpm --enable-libssh2 \
-    --enable-replication --disable-libiscsi --disable-libnfs \
-    --disable-libusb"
+    --disable-virtfs --enable-fdt --enable-bluez \
+    --enable-kvm --disable-hax \
+    --enable-linux-aio --enable-cap-ng --enable-attr --enable-vhost-net --enable-libiscsi --disable-libnfs --disable-smartcard --disable-libusb --enable-live-block-migration --disable-usb-redir \
+    --enable-bzip2 \
+
+    --enable-coroutine-pool --disable-glusterfs --enable-tpm --enable-libssh2 --enable-replication --enable-vhost-vsock --enable-xfsctl --enable-tools \
+    --enable-crypto-afalg \
+    "
+
+    QEMU_CONFIGURE_GIT=$QEMU_CONFIGURE_2_10_0_RC0
 
     #pkg_install
-    #src_download
-    #tar_extract
-    MAKE_J="-j$(grep -c ^processor /proc/cpuinfo | grep -E '^[1-9]+[0-9]*$' || echo 1)"
+
+    MAKE_J="$(grep -c ^processor /proc/cpuinfo | grep -E '^[1-9]+[0-9]*$' || echo 1)" ; test $MAKE_J != "1" && make_j=$((MAKE_J - 1)) || make_j=$MAKE_J
+    MAKE_J="-j${make_j}"
 
     if ! test "$GIT_QEMU" = "0" ; then
         #src_download
@@ -65,7 +83,7 @@ init() {
         install qemu
     else
         #git_clone
-        install qemu-git
+        #install qemu-git
     fi
 }
 
@@ -80,10 +98,12 @@ helloworld() {
 -----------------------------
 Web: AIXIAO.ME
 AQ: $VER for $OS $vvv
+Qq: 1225803134
 Qq: 1605227279
+Qemail: 1225803134@qq.com
 Qemail: 1605227279@qq.com
 Author: nan13643966916@gmail.com
-Android Qemu | Linux Qemu
+Android Qemu & Linux Qemu
 -----------------------------
 HELLOWORLD
 }
@@ -234,16 +254,18 @@ configure() {
     ${QEMU_CONFIGURE_2_8_0}
                 ;;
                 "2.8.1.1")
-    ./configure --prefix=/data/local/aixiao.qemu --target-list=arm-linux-user,arm-softmmu
+    ${QEMU_CONFIGURE_2_8_1_1}
                 ;;
                 "2.9.0")
 
                 ;;
+                "2.10.0-rc0")
+    ${QEMU_CONFIGURE_2_10_0_RC0}
+                ;;
             esac
         ;;
         qemu-git)
-            ./configure
-            #$QEMU_CONFIGURE
+    ${QEMU_CONFIGURE_GIT}
         ;;
     esac
 }
@@ -313,7 +335,6 @@ install() {
                 exit
             fi
             }
-
         ;;
     esac
 }
@@ -322,9 +343,14 @@ init_exec() {
     case "$1" in
         "--help")
             cat <<HELP
-AQ
-Android Qemu
-Aixiao.me
+---------------------------
+            AQ
+Android Qemu & Linux Qemu
+Qq: 1225803134
+Qq: 1605227279
+Qemail: 1225803134@qq.com
+Qemail: 1605227279@qq.com
+Author: nan13643966916@gmail.com
 ---------------------------
 --prefix=
 ---------------------------
@@ -348,7 +374,7 @@ HELP
     esac
 }
 path
-VER=1.01
+VER=1.02
 for((i=1;i<=$#;i++)); do
     ini_cfg=${!i}
     ini_cfg_a=`echo $ini_cfg | sed -r s/^-?-?.*=//`
