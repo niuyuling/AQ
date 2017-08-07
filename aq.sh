@@ -9,22 +9,19 @@ init() {
     check_os
     helloworld
     check_root
-    #test $OS = "ubuntu" && echo -ne Debian Run ?\\n ; exit
     PWD=$(pwd)
     SRC=$PWD/AQ
     QEMU_PREFIX=/data/local/aixiao.qemu
-
     QEMU_VERSION="2.8.0"
     QEMU_VERSION="2.8.1.1"
     QEMU_VERSION="2.10.0-rc0"
-    #QEMU_VERSION=${QEMU_VERSION:+qemu_version}
-    test -n "$qemu_version" && QEMU_VERSION=$qemu_version
+    QEMU_VERSION="2.10.0-rc1"
+    QEMU_VERSION=${qemu_version:-"$QEMU_VERSION"}
+    check_qemu_version $QEMU_VERSION
     QEMU_TAR_SRC=${PWD}/AQ/qemu-${QEMU_VERSION}.tar.xz
     QEMU_TAR_SRC_USR=http://download.qemu-project.org/qemu-${QEMU_VERSION}.tar.xz
-
     QEMU_SRC_DIR=${PWD}/AQ/qemu-${QEMU_VERSION}
-    QEMU_GIT_SRC_DIR=${PWD}/qemu
-
+    QEMU_GIT_SRC_DIR=${PWD}/AQ/qemu
     QEMU_CONFIGURE_2_8_0="
     ./configure --prefix=${QEMU_PREFIX} --target-list=arm-linux-user,arm-softmmu \
     --static \
@@ -69,22 +66,19 @@ init() {
     --enable-coroutine-pool --disable-glusterfs --enable-tpm --enable-libssh2 --enable-replication --enable-vhost-vsock --enable-xfsctl --enable-tools \
     --enable-crypto-afalg \
     "
-
+    QEMU_CONFIGURE_2_10_0_RC1=$QEMU_CONFIGURE_2_10_0_RC0
     QEMU_CONFIGURE_GIT=$QEMU_CONFIGURE_2_10_0_RC0
-
-    #pkg_install
-
     MAKE_J="$(grep -c ^processor /proc/cpuinfo | grep -E '^[1-9]+[0-9]*$' || echo 1)" ; test $MAKE_J != "1" && make_j=$((MAKE_J - 1)) || make_j=$MAKE_J
     MAKE_J="-j${make_j}"
-
-    if ! test "$GIT_QEMU" = "0" ; then
-        #src_download
-        tar_extract
-        install qemu
-    else
-        #git_clone
-        #install qemu-git
+    pkg_install debian
+    if test "$GIT_QEMU" = "0" ; then
+        git_clone
+        install qemu-git
+        exit 1
     fi
+    src_download
+    tar_extract
+    install qemu
 }
 
 initdate() {
@@ -123,15 +117,36 @@ check_os() {
         echo -e SYSTEM: CENTOS $(uname -m) ${OS_VER}\\nKERNEL: $(uname -sr)
     else
         echo The system does not support
-        exit
+        exit 1
     fi
+    ! test $OS = "debian" && echo -ne The system does not support\\n ; exit
 }
 
 check_root() {
     if test $(id -u) != "0" || test $(id -g) != 0 ; then
         echo Root run $0 ?
-        exit
+        exit 1
     fi
+}
+
+check_qemu_version() {
+    case $1 in
+        "2.8.0")
+        :
+        ;;
+        "2.8.1.1")
+        :
+        ;;
+        "2.10.0-rc0")
+        :
+        ;;
+        "2.10.0-rc1")
+        :
+        ;;
+        *)
+        echo -ne The QEMU $QEMU_VERSION version does not support configure\\n ; exit 1
+        ;;
+    esac
 }
 
 bg_exec() {
@@ -167,6 +182,8 @@ wait_pid() {
 }
 
 pkg_install() {
+    case $1 in
+        debian)
     echo -n "Debian apt update "
     bg_wait apt-get update
     if test $(cat $BGEXEC_EXIT_STATUS_FILE) != "0" ; then
@@ -175,27 +192,26 @@ pkg_install() {
         echo -ne done\\n
     fi
     echo -n "Debian apt install "
-    #DEBIAN_FRONTEND=noninteractive bg_wait apt-get -qqy --force-yes install cmake autoconf pkg-config locales-all build-essential $APT_1 $APT_2 $APT_3
-    #bg_wait apt-get build-dep qemu-system
     DEBIAN_FRONTEND=noninteractive bg_wait apt-get -qqy --force-yes build-dep qemu-system build-essential
     if test $(cat $BGEXEC_EXIT_STATUS_FILE) != "0" ; then
         echo -ne fail\\n-----------------------------\\n
-        exit
+        exit 1
     fi
-    #! test -f /usr/include/gmp.h && ln -s $(find /usr/include/ -name gmp.h) /usr/include/gmp.h >> /dev/null 2>&1
     echo -ne done\\n-----------------------------\\n
+        ;;
+    esac
 }
 
 src_download() {
     if ! test -f ${QEMU_TAR_SRC} ; then
         echo -n "Download QEMU ${QEMU_VERSION} "
         bg_wait wget -q -T 120 -O ${QEMU_TAR_SRC}_tmp ${QEMU_TAR_SRC_USR}
-        if test $(cat $BGEXEC_EXIT_STATUS_FILE) != "0" || ! test -f ${1}_tmp ; then
+        if test $(cat $BGEXEC_EXIT_STATUS_FILE) != "0" || ! test -f ${QEMU_TAR_SRC}_tmp ; then
             echo -ne fail\\n
             test -f ${QEMU_TAR_SRC}_tmp && rm -f ${QEMU_TAR_SRC}_tmp && exit 2
         else
             echo -ne done\\n
-            mv ${QEMU_TAR_SRC}_tmp ${QEMU_TAR_SRC_USR}
+            mv ${QEMU_TAR_SRC}_tmp ${QEMU_TAR_SRC}
         fi
     fi
 }
@@ -205,10 +221,10 @@ tar_extract() {
         echo -n +Extract QEMU ....
         tar -axf $QEMU_TAR_SRC -C $SRC >> /dev/null 2>&1
         if ! test -d $QEMU_SRC_DIR ; then
-            echo -ne \\b\\b\\b\\bfail\\n
-            exit
+            echo -ne \\b\\b\\b\\bfail\\n-----------------------------\\n
+            exit 2
         else
-            echo -ne \\b\\b\\b\\bdone\\n
+            echo -ne \\b\\b\\b\\bdone\\n-----------------------------\\n
         fi
     fi
 }
@@ -218,31 +234,36 @@ git_clone() {
         echo -n "GIT PULL QEMU "
         cd $SRC
         bg_wait git clone git://git.qemu-project.org/qemu.git
-        cd qemu
+        if test $(cat $BGEXEC_EXIT_STATUS_FILE) != "0" || ! test -d $QEMU_GIT_SRC_DIR ; then
+            echo -ne fail\\n
+            exit 2
+        fi
+        cd $QEMU_GIT_SRC_DIR
         bg_wait git submodule init
+        if test $(cat $BGEXEC_EXIT_STATUS_FILE) != "0" ; then
+            echo -ne fail\\n
+            exit 2
+        fi
         bg_wait git submodule update --recursive
         if test $(cat $BGEXEC_EXIT_STATUS_FILE) != "0" || ! test -f $QEMU_GIT_SRC_DIR/configure ; then
             echo -ne fail\\n
+            exit 2
         else
-            echo -ne done\\n
+            echo -ne done\\n-----------------------------\\n
         fi
     fi
 }
 
 c_configure() {
-    #test "$QEMU_VERSION" = "2.8.0" && sed -i '1977i printf(\"AIXIAO.ME Compile Links, EMAIL 1605227279@QQ.COM\\n\");' vl.c
-    #test "$QEMU_VERSION" = "2.8.1.1" && sed -i '1977i printf(\"AIXIAO.ME Compile Links, EMAIL 1605227279@QQ.COM\\n\");' vl.c
     a="'"
     b="\""
     c="\\"
     l=$(grep -ne "static void version(void)" vl.c | cut -d : -f1)
     l=$((l+2))
-    #x=$(eval "sed -i ${a}${l}i printf(${c}${b}AIXIAO.ME Compile Links, EMAIL 1605227279@QQ.COM${c}${c}n${c}${b});${a} vl.c")
-    #$x
     if test "$(grep "AIXIAO.ME" vl.c ; echo $?)" = "1" ; then
         eval "sed -i ${a}${l}i printf(${c}${b}AIXIAO.ME Compile Links, EMAIL 1605227279@QQ.COM${c}${c}n${c}${b});${a} vl.c"
     else
-        exit
+        exit 3
     fi
 }
 
@@ -262,6 +283,9 @@ configure() {
                 "2.10.0-rc0")
     ${QEMU_CONFIGURE_2_10_0_RC0}
                 ;;
+                "2.10.0-rc1")
+    ${QEMU_CONFIGURE_2_10_0_RC1}
+                ;;
             esac
         ;;
         qemu-git)
@@ -274,19 +298,20 @@ install() {
     case $1 in
         qemu)
             cd $QEMU_SRC_DIR
-            configure $1 $QEMU_VERSION >> /dev/null 2>&1 &
-            echo -n Configure QEMU\ ;wait_pid $!
-            if test -f $QEMU_SRC_DIR/Makefile ; then
+            echo -n "Configure QEMU "
+            bg_wait configure $1 $QEMU_VERSION
+            if test $(cat $BGEXEC_EXIT_STATUS_FILE) = "0" && test -f $QEMU_SRC_DIR/Makefile ; then
                 echo -ne done\\n
             else
                 echo -ne fail\\n
-                exit
+                exit 3
             fi
+
             c_configure >> /dev/null 2>&1 &
             echo -n Configure QEMU C File\ ;wait_pid $!
             if test "$(grep "AIXIAO.ME" vl.c ; echo $?)" = "1" ; then
                 echo -ne fail\\n
-                exit
+                exit 3
             else
                 echo -ne done\\n
             fi
@@ -296,7 +321,7 @@ install() {
                 echo -ne done\\n
             else
                 echo -ne fail\\n
-                exit
+                exit 3
             fi
             make install >> /dev/null 2>&1 &
             echo -n Make install QEMU\ ;wait_pid $!
@@ -304,19 +329,26 @@ install() {
                 echo -ne done\\n
             else
                 echo -ne fail\\n
-                exit
+                exit 3
             fi
         ;;
         qemu-git)
-            qemu-git() {
             cd $QEMU_GIT_SRC_DIR
-            configure $1 $QEMU_VERSION >> /dev/null 2>&1 &
-            echo -n Configure QEMU\ ;wait_pid $!
-            if test -f $QEMU_GIT_SRC_DIR/Makefile ; then
+            echo -n "Configure QEMU "
+            bg_wait configure $1
+            if test $(cat $BGEXEC_EXIT_STATUS_FILE) = "0" && test -f $QEMU_GIT_SRC_DIR/Makefile ; then
                 echo -ne done\\n
             else
                 echo -ne fail\\n
-                exit
+                exit 3
+            fi
+            c_configure >> /dev/null 2>&1 &
+            echo -n Configure QEMU C File\ ; wait_pid $!
+            if test "$(grep "AIXIAO.ME" vl.c ; echo $?)" = "1" ; then
+                echo -ne fail\\n
+                exit 3
+            else
+                echo -ne done\\n
             fi
             make $MAKE_J >> /dev/null 2>&1 &
             echo -n Make QEMU\ ;wait_pid $!
@@ -324,7 +356,7 @@ install() {
                 echo -ne done\\n
             else
                 echo -ne fail\\n
-                exit
+                exit 3
             fi
             make install >> /dev/null 2>&1 &
             echo -n Make install QEMU\ ;wait_pid $!
@@ -332,11 +364,11 @@ install() {
                 echo -ne done\\n
             else
                 echo -ne fail\\n
-                exit
+                exit 3
             fi
-            }
         ;;
     esac
+    echo -e -----------------------------\\nAll Installation Complete\\n-----------------------------\\nProcessed\ in\ $(awk "BEGIN{print `date +%s`-$init_date}")\ second\(s\)
 }
 
 init_exec() {
@@ -356,6 +388,7 @@ Author: nan13643966916@gmail.com
 ---------------------------
 --qemuversion=
 ---------------------------
+--gitqemu
 ---------------------------
 --help
 ---------------------------
@@ -374,7 +407,7 @@ HELP
     esac
 }
 path
-VER=1.02
+VER=1.03
 for((i=1;i<=$#;i++)); do
     ini_cfg=${!i}
     ini_cfg_a=`echo $ini_cfg | sed -r s/^-?-?.*=//`
