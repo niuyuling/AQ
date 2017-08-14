@@ -1,5 +1,14 @@
 #!/bin/bash
-#AQ
+# AQ
+# Build Android qemu 
+# Statically connected binary program
+# Qemu Version: 2.10.0-rc2
+# System: Debian stretch, System Architecture: armel
+# System: Ubuntu 16.10, System Architecture: x86_64
+# Write Time: 20170707
+# Modify Time 20170814 
+# AIXIAO.me
+
 #set -x
 path() {
     export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
@@ -16,6 +25,7 @@ init() {
     QEMU_VERSION="2.8.1.1"
     QEMU_VERSION="2.10.0-rc0"
     QEMU_VERSION="2.10.0-rc1"
+    QEMU_VERSION="2.10.0-rc2"
     QEMU_VERSION=${qemu_version:-"$QEMU_VERSION"}
     check_qemu_version $QEMU_VERSION
     QEMU_TAR_SRC=${PWD}/AQ/qemu-${QEMU_VERSION}.tar.xz
@@ -66,8 +76,26 @@ init() {
     --enable-coroutine-pool --disable-glusterfs --enable-tpm --enable-libssh2 --enable-replication --enable-vhost-vsock --enable-xfsctl --enable-tools \
     --enable-crypto-afalg \
     "
+    QEMU_CONFIGURE_2_10_0_RC2="
+    ./configure --prefix=${QEMU_PREFIX} --target-list=arm-linux-user,arm-softmmu,i386-linux-user,i386-softmmu \
+    --static \
+
+    --enable-system --enable-user --disable-bsd-user --enable-docs --enable-guest-agent --disable-guest-agent-msi --disable-pie --disable-modules --enable-debug-tcg --disable-debug-info --disable-sparse \
+
+    --disable-gnutls --disable-nettle --enable-gcrypt --disable-sdl --disable-gtk --disable-vte --disable-curses --enable-vnc --disable-vnc-sasl --enable-vnc-jpeg --enable-vnc-png --disable-cocoa \
+
+    --enable-virtfs --disable-xen --disable-xen-pci-passthrough --disable-brlapi --disable-curl --enable-fdt --enable-bluez --enable-kvm --disable-hax \
+    --disable-rdma --disable-netmap --enable-linux-aio --enable-cap-ng --enable-attr --enable-vhost-net --disable-spice --disable-rbd --enable-libiscsi --disable-libnfs --disable-smartcard \
+    --disable-libusb --enable-live-block-migration --disable-usb-redir --disable-lzo --disable-snappy \
+    --enable-bzip2 \
+
+    --disable-seccomp --enable-coroutine-pool --disable-glusterfs --enable-tpm --disable-libssh2 --disable-numa --disable-tcmalloc --disable-jemalloc --enable-replication --enable-vhost-vsock --disable-opengl \
+    --disable-virglrenderer --enable-xfsctl --enable-qom-cast-debug --enable-tools --disable-vxhs \
+    --enable-crypto-afalg --enable-vhost-user\
+    "
     QEMU_CONFIGURE_2_10_0_RC1=$QEMU_CONFIGURE_2_10_0_RC0
-    QEMU_CONFIGURE_GIT=$QEMU_CONFIGURE_2_10_0_RC0
+    QEMU_CONFIGURE_2_10_0_RC2=$QEMU_CONFIGURE_2_10_0_RC2
+    QEMU_CONFIGURE_GIT=$QEMU_CONFIGURE_2_10_0_RC2
     MAKE_J="$(grep -c ^processor /proc/cpuinfo | grep -E '^[1-9]+[0-9]*$' || echo 1)" ; test $MAKE_J != "1" && make_j=$((MAKE_J - 1)) || make_j=$MAKE_J
     MAKE_J="-j${make_j}"
     pkg_install debian
@@ -119,7 +147,18 @@ check_os() {
         echo The system does not support
         exit 1
     fi
-    ! test $OS = "debian" && echo -ne The system does not support\\n ; exit
+    #! test "$OS" = "debian" && echo -ne The system does not support\\n && exit 1
+    case $OS in
+        "debian")
+        :
+        ;;
+        "ubuntu")
+        :
+        ;;
+        "*")
+        echo -ne The system does not support\\n && exit 1
+        ;;
+    esac
 }
 
 check_root() {
@@ -141,6 +180,9 @@ check_qemu_version() {
         :
         ;;
         "2.10.0-rc1")
+        :
+        ;;
+        "2.10.0-rc2")
         :
         ;;
         *)
@@ -255,11 +297,11 @@ git_clone() {
 }
 
 c_configure() {
-    a="'"
-    b="\""
-    c="\\"
-    l=$(grep -ne "static void version(void)" vl.c | cut -d : -f1)
-    l=$((l+2))
+    local a="'"
+    local b="\""
+    local c="\\"
+    local l=$(grep -ne "static void version(void)" vl.c | cut -d : -f1)
+    local l=$((l+2))
     if test "$(grep "AIXIAO.ME" vl.c ; echo $?)" = "1" ; then
         eval "sed -i ${a}${l}i printf(${c}${b}AIXIAO.ME Compile Links, EMAIL 1605227279@QQ.COM${c}${c}n${c}${b});${a} vl.c"
     else
@@ -278,13 +320,16 @@ configure() {
     ${QEMU_CONFIGURE_2_8_1_1}
                 ;;
                 "2.9.0")
-
+    :
                 ;;
                 "2.10.0-rc0")
     ${QEMU_CONFIGURE_2_10_0_RC0}
                 ;;
                 "2.10.0-rc1")
     ${QEMU_CONFIGURE_2_10_0_RC1}
+                ;;
+                "2.10.0-rc2")
+    ${QEMU_CONFIGURE_2_10_0_RC2}
                 ;;
             esac
         ;;
@@ -407,7 +452,7 @@ HELP
     esac
 }
 path
-VER=1.03
+VER=1.04
 for((i=1;i<=$#;i++)); do
     ini_cfg=${!i}
     ini_cfg_a=`echo $ini_cfg | sed -r s/^-?-?.*=//`
