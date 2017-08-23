@@ -100,7 +100,7 @@ init() {
     QEMU_CONFIGURE_GIT=$QEMU_CONFIGURE_2_10_0_RC2
     MAKE_J="$(grep -c ^processor /proc/cpuinfo | grep -E '^[1-9]+[0-9]*$' || echo 1)" ; test $MAKE_J != "1" && make_j=$((MAKE_J - 1)) || make_j=$MAKE_J
     MAKE_J="-j${make_j}"
-    pkg_install debian
+    pkg_install $OS
     if test "$GIT_QEMU" = "0" ; then
         git_clone
         install qemu-git
@@ -149,13 +149,26 @@ check_os() {
         echo The system does not support
         exit 1
     fi
-    #! test "$OS" = "debian" && echo -ne The system does not support\\n && exit 1
     case $OS in
         "debian")
-        :
+        APT1=""
+        arch=`uname -m`
+        test "$arch" = "i686" && arch=x86
+        test "$arch" = "i386" && arch=x86
+        test "$arch" = "i486" && arch=x86
+        test "$arch" = "i586" && arch=x86
+        test "$arch" = "x86_64" && arch=x64
+        test "$arch" = "armel7" && arch=arm
         ;;
         "ubuntu")
-        :
+        APT1=""
+        arch=`uname -m`
+        test "$arch" = "i686" && arch=x86
+        test "$arch" = "i386" && arch=x86
+        test "$arch" = "i486" && arch=x86
+        test "$arch" = "i586" && arch=x86
+        test "$arch" = "x86_64" && arch=x64
+        test "$arch" = "armel7" && arch=arm
         ;;
         "*")
         echo -ne The system does not support\\n && exit 1
@@ -239,13 +252,46 @@ pkg_install() {
         echo -ne done\\n
     fi
     echo -n "Debian apt install "
-    DEBIAN_FRONTEND=noninteractive bg_wait apt-get -qqy --force-yes build-dep qemu-system build-essential
+    DEBIAN_FRONTEND=noninteractive bg_wait apt-get -qqy --force-yes install build-essential git $APT1
+    if test $(cat $BGEXEC_EXIT_STATUS_FILE) != "0" ; then
+        echo -ne fail\\n-----------------------------\\n
+        exit 1
+    else
+        echo -ne done\\n
+    fi
+    echo -n "Debian apt build-dep "
+    DEBIAN_FRONTEND=noninteractive bg_wait apt-get -qqy --force-yes build-dep qemu-system $APT1
     if test $(cat $BGEXEC_EXIT_STATUS_FILE) != "0" ; then
         echo -ne fail\\n-----------------------------\\n
         exit 1
     fi
     echo -ne done\\n-----------------------------\\n
         ;;
+        ubuntu)
+    echo -n "Ubuntu apt update "
+    bg_wait apt-get update
+    if test $(cat $BGEXEC_EXIT_STATUS_FILE) != "0" ; then
+        echo -ne fail\\n
+    else
+        echo -ne done\\n
+    fi
+    echo -n "Ubuntu apt install "
+    DEBIAN_FRONTEND=noninteractive bg_wait apt-get -qqy --force-yes install build-essential git
+    if test $(cat $BGEXEC_EXIT_STATUS_FILE) != "0" ; then
+        echo -ne fail\\n-----------------------------\\n
+        exit 1
+    else
+        echo -ne done\\n
+    fi
+    echo -n "Ubuntu apt build-dep "
+    DEBIAN_FRONTEND=noninteractive bg_wait apt-get -qqy --force-yes build-dep qemu-system
+    if test $(cat $BGEXEC_EXIT_STATUS_FILE) != "0" ; then
+        echo -ne fail\\n-----------------------------\\n
+        exit 1
+    else
+        echo -ne done\\n-----------------------------\\n
+    fi
+    ;;
     esac
 }
 
@@ -460,7 +506,7 @@ HELP
     esac
 }
 path
-VER=1.04
+VER=1.05
 for((i=1;i<=$#;i++)); do
     ini_cfg=${!i}
     ini_cfg_a=`echo $ini_cfg | sed -r s/^-?-?.*=//`
