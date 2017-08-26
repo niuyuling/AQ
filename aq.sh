@@ -391,7 +391,7 @@ configure() {
     ${QEMU_CONFIGURE_2_10_0_RC3}
                 ;;
                 "2.10.0-rc4")
-    ${QEMU_CONGIGURE_2_10_0_RC4}
+    ${QEMU_CONFIGURE_2_10_0_RC4}
                 ;;
             esac
         ;;
@@ -514,7 +514,7 @@ HELP
     esac
 }
 path
-VER=1.06
+VER=1.07
 for((i=1;i<=$#;i++)); do
     ini_cfg=${!i}
     ini_cfg_a=`echo $ini_cfg | sed -r s/^-?-?.*=//`
