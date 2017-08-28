@@ -160,7 +160,7 @@ check_os() {
         test "$arch" = "i486" && arch=x86
         test "$arch" = "i586" && arch=x86
         test "$arch" = "x86_64" && arch=x64
-        test "$arch" = "armel7" && arch=arm
+        test "$arch" = "armv7l" && arch=arm
         case $vvv in
             "8")
                 :
