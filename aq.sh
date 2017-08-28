@@ -31,6 +31,7 @@ init() {
     QEMU_VERSION=${qemu_version:-"$QEMU_VERSION"}
     check_qemu_version $QEMU_VERSION
     QEMU_TAR_SRC=${PWD}/AQ/qemu-${QEMU_VERSION}.tar.xz
+    QEMU_BIN_TAR_CREATE_SRC="${SRC}/qemu-${QEMU_VERSION}_${arch}.tar.bz2"
     QEMU_TAR_SRC_USR=http://download.qemu-project.org/qemu-${QEMU_VERSION}.tar.xz
     QEMU_SRC_DIR=${PWD}/AQ/qemu-${QEMU_VERSION}
     QEMU_GIT_SRC_DIR=${PWD}/AQ/qemu
@@ -153,7 +154,6 @@ check_os() {
     fi
     case $OS in
         "debian")
-        APT1=""
         arch=`uname -m`
         test "$arch" = "i686" && arch=x86
         test "$arch" = "i386" && arch=x86
@@ -161,9 +161,27 @@ check_os() {
         test "$arch" = "i586" && arch=x86
         test "$arch" = "x86_64" && arch=x64
         test "$arch" = "armel7" && arch=arm
+        case $vvv in
+            "8")
+                :
+            ;;
+            "9")
+                case $arch in
+                    "arm")
+                         APT1="libbz2-dev"
+                     ;;
+                     "x86")
+                         APT1="libbz2-dev"
+                     ;;
+                     "x64")
+                         APT1="libbz2-dev"
+                     ;;
+                esac
+            ;;
+        esac
+        APT="$APT1"
         ;;
         "ubuntu")
-        APT1=""
         arch=`uname -m`
         test "$arch" = "i686" && arch=x86
         test "$arch" = "i386" && arch=x86
@@ -171,6 +189,15 @@ check_os() {
         test "$arch" = "i586" && arch=x86
         test "$arch" = "x86_64" && arch=x64
         test "$arch" = "armel7" && arch=arm
+        case $vvv in
+            "16")
+            :
+            ;;
+            "17")
+            :
+            ;;
+        esac
+        APT=""
         ;;
         "*")
         echo -ne The system does not support\\n && exit 1
@@ -257,7 +284,7 @@ pkg_install() {
         echo -ne done\\n
     fi
     echo -n "Debian apt install "
-    DEBIAN_FRONTEND=noninteractive bg_wait apt-get -qqy --force-yes install build-essential git $APT1
+    DEBIAN_FRONTEND=noninteractive bg_wait apt-get -qqy --force-yes install build-essential git $APT
     if test $(cat $BGEXEC_EXIT_STATUS_FILE) != "0" ; then
         echo -ne fail\\n-----------------------------\\n
         exit 1
@@ -265,7 +292,7 @@ pkg_install() {
         echo -ne done\\n
     fi
     echo -n "Debian apt build-dep "
-    DEBIAN_FRONTEND=noninteractive bg_wait apt-get -qqy --force-yes build-dep qemu-system $APT1
+    DEBIAN_FRONTEND=noninteractive bg_wait apt-get -qqy --force-yes build-dep qemu-system $APT
     if test $(cat $BGEXEC_EXIT_STATUS_FILE) != "0" ; then
         echo -ne fail\\n-----------------------------\\n
         exit 1
@@ -319,10 +346,34 @@ tar_extract() {
         echo -n +Extract QEMU ....
         tar -axf $QEMU_TAR_SRC -C $SRC >> /dev/null 2>&1
         if ! test -d $QEMU_SRC_DIR ; then
-            echo -ne \\b\\b\\b\\bfail\\n-----------------------------\\n
+            echo -ne \\b\\b\\b\\bfail\\n
             exit 2
         else
-            echo -ne \\b\\b\\b\\bdone\\n-----------------------------\\n
+            echo -ne \\b\\b\\b\\bdone\\n
+        fi
+    fi
+}
+
+tar_create() {
+    if test -d $QEMU_PREFIX ; then
+        echo -n +Create QEMU $QEMU_BIN_TAR_CREATE_SRC ....
+        tar -cjf $QEMU_BIN_TAR_CREATE_SRC $QEMU_PREFIX > /dev/null 2>&1
+        if ! test -f $QEMU_BIN_TAR_CREATE_SRC ; then
+            echo -ne \\b\\b\\b\\bfail\\n
+            exit 2
+        else
+            echo -ne \\b\\b\\b\\bdone\\n
+        fi
+    fi
+}
+
+check_qemu_bin() {
+    if test -d $QEMU_PREFIX ; then
+        file $QEMU_PREFIX/bin/qemu-system-i386 | grep "statically linked" > /dev/null 2>&1
+        if test $(echo $?) = "0" ; then
+            echo -ne statically linked binary program.\\n
+        else
+            echo -ne dynamically linked binary program.\\n
         fi
     fi
 }
@@ -475,6 +526,9 @@ install() {
             fi
         ;;
     esac
+    echo -ne -----------------------------\\n
+    tar_create
+    check_qemu_bin
     echo -e -----------------------------\\nAll Installation Complete\\n-----------------------------\\nProcessed\ in\ $(awk "BEGIN{print `date +%s`-$init_date}")\ second\(s\)
 }
 
@@ -514,7 +568,7 @@ HELP
     esac
 }
 path
-VER=1.07
+VER=1.08
 for((i=1;i<=$#;i++)); do
     ini_cfg=${!i}
     ini_cfg_a=`echo $ini_cfg | sed -r s/^-?-?.*=//`
