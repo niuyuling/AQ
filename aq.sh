@@ -1,7 +1,7 @@
 #!/bin/bash
 # AQ
 # Build Android qemu 
-# Statically connected binary program
+# statically linked binary program
 # Qemu Version: 2.10.0-rc2
 # System: Debian stretch, System Architecture: armel
 # System: Ubuntu 16.10, System Architecture: x86_64
