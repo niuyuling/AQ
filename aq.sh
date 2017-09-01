@@ -28,6 +28,7 @@ init() {
     QEMU_VERSION="2.10.0-rc2"
     QEMU_VERSION="2.10.0-rc3"
     QEMU_VERSION="2.10.0-rc4"
+    QEMU_VERSION="2.10.0"
     QEMU_VERSION=${qemu_version:-"$QEMU_VERSION"}
     check_qemu_version $QEMU_VERSION
     QEMU_TAR_SRC=${PWD}/AQ/qemu-${QEMU_VERSION}.tar.xz
@@ -100,6 +101,7 @@ init() {
     QEMU_CONFIGURE_2_10_0_RC2=$QEMU_CONFIGURE_2_10_0_RC2
     QEMU_CONFIGURE_2_10_0_RC3=$QEMU_CONFIGURE_2_10_0_RC2
     QEMU_CONFIGURE_2_10_0_RC4=$QEMU_CONFIGURE_2_10_0_RC2
+    QEMU_CONFIGURE_2_10_0=$QEMU_CONFIGURE_2_10_0_RC2
     QEMU_CONFIGURE_GIT=$QEMU_CONFIGURE_2_10_0_RC2
     MAKE_J="$(grep -c ^processor /proc/cpuinfo | grep -E '^[1-9]+[0-9]*$' || echo 1)" ; test $MAKE_J != "1" && make_j=$((MAKE_J - 1)) || make_j=$MAKE_J
     MAKE_J="-j${make_j}"
@@ -235,6 +237,9 @@ check_qemu_version() {
         "2.10.0-rc4")
         :
         ;;
+        "2.10.0")
+        :
+        ;;
         *)
         echo -ne The QEMU $QEMU_VERSION version does not support configure\\n ; exit 1
         ;;
@@ -284,7 +289,7 @@ pkg_install() {
         echo -ne done\\n
     fi
     echo -n "Debian apt install "
-    DEBIAN_FRONTEND=noninteractive bg_wait apt-get -qqy --force-yes install build-essential git $APT
+    DEBIAN_FRONTEND=noninteractive bg_wait apt-get -qqy --force-yes install build-essential git-core $APT
     if test $(cat $BGEXEC_EXIT_STATUS_FILE) != "0" ; then
         echo -ne fail\\n-----------------------------\\n
         exit 1
@@ -444,6 +449,9 @@ configure() {
                 "2.10.0-rc4")
     ${QEMU_CONFIGURE_2_10_0_RC4}
                 ;;
+                "2.10.0")
+    ${QEMU_CONFIGURE_2_10_0}
+                ;;
             esac
         ;;
         qemu-git)
@@ -568,7 +576,7 @@ HELP
     esac
 }
 path
-VER=1.08
+VER=1.09
 for((i=1;i<=$#;i++)); do
     ini_cfg=${!i}
     ini_cfg_a=`echo $ini_cfg | sed -r s/^-?-?.*=//`
