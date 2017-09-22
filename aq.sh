@@ -46,8 +46,8 @@ init() {
     --enable-fdt --enable-bluez --enable-kvm \
     --enable-colo --enable-linux-aio --enable-cap-ng --enable-attr --enable-vhost-net --enable-bzip2 \
 
-    --enable-coroutine-pool --enable-tpm --enable-libssh2 --enable-replication \
-    --disable-libiscsi --disable-libnfs --disable-libusb \
+    --enable-coroutine-pool --enable-tpm --disable-libssh2 --enable-replication \
+    --disable-libiscsi --disable-libnfs --disable-libusb --disable-smartcard --disable-usb-redir --disable-glusterfs --disable-seccomp \
     "
     QEMU_CONFIGURE_2_8_1_1="
     ./configure --prefix=${QEMU_PREFIX} --target-list=arm-linux-user,arm-softmmu \
@@ -59,8 +59,8 @@ init() {
     --enable-fdt --enable-bluez --enable-kvm \
     --enable-colo --enable-linux-aio --enable-cap-ng --enable-attr --enable-vhost-net --enable-bzip2 \
 
-    --enable-coroutine-pool --enable-tpm --enable-libssh2 --enable-replication \
-    --disable-libiscsi --disable-libnfs --disable-libusb \
+    --enable-coroutine-pool --enable-tpm --disable-libssh2 --enable-replication \
+    --disable-libiscsi --disable-libnfs --disable-libusb --disable-smartcard --disable-usb-redir --disable-glusterfs --disable-seccomp \
     "
     QEMU_CONFIGURE_2_10_0_RC0="
     ./configure --prefix=${QEMU_PREFIX} --target-list=arm-linux-user,arm-softmmu,i386-linux-user,i386-softmmu \
@@ -121,8 +121,6 @@ initdate() {
 }
 
 helloworld() {
-    vvv=$(echo $OS_VER | cut -b1)
-    test $OS = "ubuntu" && vvv=$(echo $OS_VER | awk -F '.' '{print$1}')
     cat <<HELLOWORLD
 -----------------------------
 Web: AIXIAO.ME
@@ -131,8 +129,8 @@ Qq: 1225803134
 Qq: 1605227279
 Qemail: 1225803134@qq.com
 Qemail: 1605227279@qq.com
-Author: nan13643966916@gmail.com
-Android Qemu & Linux Qemu
+Author: aixiao@aixiao.me
+Android Qemu
 -----------------------------
 HELLOWORLD
 }
@@ -154,6 +152,8 @@ check_os() {
         echo The system does not support
         exit 1
     fi
+    vvv=$(echo $OS_VER | cut -b1)
+    test $OS = "ubuntu" && vvv=$(echo $OS_VER | awk -F '.' '{print$1}')
     case $OS in
         "debian")
         arch=`uname -m`
@@ -193,13 +193,13 @@ check_os() {
         test "$arch" = "armel7" && arch=arm
         case $vvv in
             "16")
-            :
+                APT1="libbz2-dev libgcrypt-dev"
             ;;
             "17")
             :
             ;;
         esac
-        APT=""
+        APT="$APT1"
         ;;
         "*")
         echo -ne The system does not support\\n && exit 1
@@ -253,7 +253,8 @@ bg_exec() {
 }
 bg_wait() {
     BGEXEC_EXIT_STATUS_FILE=/tmp/QEMU.status
-    bg_exec $@ >> /dev/null 2>&1 &
+    BGEXEC_LOG_STATUS_FILE=/tmp/QEMU.log
+    bg_exec $@ >> $BGEXEC_LOG_STATUS_FILE 2>&1 &
     wait_pid $!
     ! test -f $BGEXEC_EXIT_STATUS_FILE && exit 2
 }
@@ -297,7 +298,7 @@ pkg_install() {
         echo -ne done\\n
     fi
     echo -n "Debian apt build-dep "
-    DEBIAN_FRONTEND=noninteractive bg_wait apt-get -qqy --force-yes build-dep qemu-system $APT
+    DEBIAN_FRONTEND=noninteractive bg_wait apt-get -qqy --force-yes build-dep qemu-system
     if test $(cat $BGEXEC_EXIT_STATUS_FILE) != "0" ; then
         echo -ne fail\\n-----------------------------\\n
         exit 1
@@ -313,7 +314,7 @@ pkg_install() {
         echo -ne done\\n
     fi
     echo -n "Ubuntu apt install "
-    DEBIAN_FRONTEND=noninteractive bg_wait apt-get -qqy --force-yes install build-essential git
+    DEBIAN_FRONTEND=noninteractive bg_wait apt-get -qqy --force-yes install build-essential git $APT
     if test $(cat $BGEXEC_EXIT_STATUS_FILE) != "0" ; then
         echo -ne fail\\n-----------------------------\\n
         exit 1
@@ -349,7 +350,7 @@ src_download() {
 tar_extract() {
     if ! test -d $QEMU_SRC_DIR; then
         echo -n +Extract QEMU ....
-        tar -axf $QEMU_TAR_SRC -C $SRC >> /dev/null 2>&1
+        tar -axf $QEMU_TAR_SRC -C $SRC >> $BGEXEC_LOG_STATUS_FILE 2>&1
         if ! test -d $QEMU_SRC_DIR ; then
             echo -ne \\b\\b\\b\\bfail\\n
             exit 2
@@ -362,7 +363,7 @@ tar_extract() {
 tar_create() {
     if test -d $QEMU_PREFIX ; then
         echo -n +Create QEMU $QEMU_BIN_TAR_CREATE_SRC ....
-        tar -cjf $QEMU_BIN_TAR_CREATE_SRC $QEMU_PREFIX > /dev/null 2>&1
+        tar -cjf $QEMU_BIN_TAR_CREATE_SRC $QEMU_PREFIX >> $BGEXEC_LOG_STATUS_FILE 2>&1
         if ! test -f $QEMU_BIN_TAR_CREATE_SRC ; then
             echo -ne \\b\\b\\b\\bfail\\n
             exit 2
@@ -481,7 +482,7 @@ install() {
             else
                 echo -ne done\\n
             fi
-            make $MAKE_J >> /dev/null 2>&1 &
+            make $MAKE_J >> $BGEXEC_LOG_STATUS_FILE 2>&1 &
             echo -n Make QEMU\ ;wait_pid $!
             if test -x $QEMU_SRC_DIR/arm-softmmu/qemu-system-arm ; then
                 echo -ne done\\n
@@ -489,7 +490,7 @@ install() {
                 echo -ne fail\\n
                 exit 3
             fi
-            make install >> /dev/null 2>&1 &
+            make install >> $BGEXEC_LOG_STATUS_FILE 2>&1 &
             echo -n Make install QEMU\ ;wait_pid $!
             if test -x $QEMU_PREFIX/bin/qemu-system-arm ; then
                 echo -ne done\\n
@@ -516,7 +517,7 @@ install() {
             else
                 echo -ne done\\n
             fi
-            make $MAKE_J >> /dev/null 2>&1 &
+            make $MAKE_J >> $BGEXEC_LOG_STATUS_FILE 2>&1 &
             echo -n Make QEMU\ ;wait_pid $!
             if test -x $QEMU_GIT_SRC_DIR/arm-softmmu/qemu-system-arm ; then
                 echo -ne done\\n
@@ -524,7 +525,7 @@ install() {
                 echo -ne fail\\n
                 exit 3
             fi
-            make install >> /dev/null 2>&1 &
+            make install >> $BGEXEC_LOG_STATUS_FILE 2>&1 &
             echo -n Make install QEMU\ ;wait_pid $!
             if test -x $QEMU_PREFIX/bin/qemu-system-arm ; then
                 echo -ne done\\n
@@ -546,12 +547,12 @@ init_exec() {
             cat <<HELP
 ---------------------------
             AQ
-Android Qemu & Linux Qemu
+Android Qemu
 Qq: 1225803134
 Qq: 1605227279
 Qemail: 1225803134@qq.com
 Qemail: 1605227279@qq.com
-Author: nan13643966916@gmail.com
+Author: aixiao@aixiao.me
 ---------------------------
 --prefix=
 ---------------------------
@@ -576,7 +577,7 @@ HELP
     esac
 }
 path
-VER=1.09
+VER=1.1
 for((i=1;i<=$#;i++)); do
     ini_cfg=${!i}
     ini_cfg_a=`echo $ini_cfg | sed -r s/^-?-?.*=//`
