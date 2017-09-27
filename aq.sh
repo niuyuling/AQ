@@ -154,15 +154,16 @@ check_os() {
     fi
     vvv=$(echo $OS_VER | cut -b1)
     test $OS = "ubuntu" && vvv=$(echo $OS_VER | awk -F '.' '{print$1}')
+    arch=`uname -m`
+    test "$arch" = "i686" && arch=x86
+    test "$arch" = "i586" && arch=x86
+    test "$arch" = "i386" && arch=x86
+    test "$arch" = "i486" && arch=x86
+    test "$arch" = "x86_64" && arch=x64
+    test "$arch" = "armv7l" && arch=arm
+    test "$arch" = "armv6l" && arch=arm
     case $OS in
         "debian")
-        arch=`uname -m`
-        test "$arch" = "i686" && arch=x86
-        test "$arch" = "i386" && arch=x86
-        test "$arch" = "i486" && arch=x86
-        test "$arch" = "i586" && arch=x86
-        test "$arch" = "x86_64" && arch=x64
-        test "$arch" = "armv7l" && arch=arm
         case $vvv in
             "8")
                 :
@@ -184,13 +185,6 @@ check_os() {
         APT="$APT1"
         ;;
         "ubuntu")
-        arch=`uname -m`
-        test "$arch" = "i686" && arch=x86
-        test "$arch" = "i386" && arch=x86
-        test "$arch" = "i486" && arch=x86
-        test "$arch" = "i586" && arch=x86
-        test "$arch" = "x86_64" && arch=x64
-        test "$arch" = "armel7" && arch=arm
         case $vvv in
             "16")
                 APT1="libbz2-dev libgcrypt-dev"
