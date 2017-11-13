@@ -7,7 +7,8 @@
 # System: Ubuntu 16.10, System Architecture: x86_64
 # Write Date: 20170707
 # Modify Date: 20171024
-# AIXIAO.me
+# aixiao@aixiao.me.
+#
 
 #set -x
 path() {
