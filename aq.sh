@@ -5,8 +5,8 @@
 # Qemu Version: 2.10.0-rc2
 # System: Debian stretch, System Architecture: armel
 # System: Ubuntu 16.10, System Architecture: x86_64
-# Write Time: 20170707
-# Modify Time 20170814 
+# Write Date: 20170707
+# Modify Date: 20171024
 # AIXIAO.me
 
 #set -x
@@ -29,6 +29,8 @@ init() {
     QEMU_VERSION="2.10.0-rc3"
     QEMU_VERSION="2.10.0-rc4"
     QEMU_VERSION="2.10.0"
+    QEMU_VERSION="2.10.1"
+    QEMU_VERSION="2.11.0-rc0"
     QEMU_VERSION=${qemu_version:-"$QEMU_VERSION"}
     check_qemu_version $QEMU_VERSION
     QEMU_TAR_SRC=${PWD}/AQ/qemu-${QEMU_VERSION}.tar.xz
@@ -97,12 +99,30 @@ init() {
     --disable-virglrenderer --enable-xfsctl --enable-qom-cast-debug --enable-tools --disable-vxhs \
     --enable-crypto-afalg --enable-vhost-user\
     "
+    QEMU_CONFIGURE_2_11_0_RC0="
+    ./configure --prefix=${QEMU_PREFIX} --target-list=arm-linux-user,arm-softmmu,i386-linux-user,i386-softmmu \
+    --static \
+    --enable-system --enable-user --disable-bsd-user --enable-docs --enable-guest-agent --disable-guest-agent-msi --disable-pie --disable-modules --enable-debug-tcg --disable-debug-info --disable-sparse \
+    --disable-gnutls --disable-nettle --enable-gcrypt --disable-sdl --disable-gtk --disable-vte --disable-curses --enable-vnc --disable-vnc-sasl --enable-vnc-jpeg --enable-vnc-png --disable-cocoa \
+    --enable-virtfs --enable-mpath --disable-xen --disable-xen-pci-passthrough --disable-brlapi --disable-curl --enable-fdt --enable-bluez --enable-kvm --disable-hax \
+    --disable-rdma --disable-netmap --enable-linux-aio --enable-cap-ng --enable-attr --enable-vhost-net --disable-spice --disable-rbd --enable-libiscsi --disable-libnfs --disable-smartcard \
+    --disable-libusb --enable-live-block-migration --disable-usb-redir --disable-lzo --disable-snappy \
+    --enable-bzip2 \
+    --disable-seccomp --enable-coroutine-pool --disable-glusterfs --enable-tpm --disable-libssh2 --disable-numa --disable-tcmalloc --disable-jemalloc --enable-replication --enable-vhost-vsock --disable-ope    ngl \
+    --disable-virglrenderer --enable-xfsctl --enable-qom-cast-debug --enable-tools --disable-vxhs \
+    --enable-crypto-afalg --enable-vhost-user\
+    --enable-capstone\
+    "
     QEMU_CONFIGURE_2_10_0_RC1=$QEMU_CONFIGURE_2_10_0_RC0
     QEMU_CONFIGURE_2_10_0_RC2=$QEMU_CONFIGURE_2_10_0_RC2
     QEMU_CONFIGURE_2_10_0_RC3=$QEMU_CONFIGURE_2_10_0_RC2
     QEMU_CONFIGURE_2_10_0_RC4=$QEMU_CONFIGURE_2_10_0_RC2
     QEMU_CONFIGURE_2_10_0=$QEMU_CONFIGURE_2_10_0_RC2
+    QEMU_CONFIGURE_2_10_1=$QEMU_CONFIGURE_2_10_0_RC2
+    QEMU_CONFIGURE_2_11_0_RC0=$QEMU_CONFIGURE_2_10_0_RC2
+    QEMU_CONFIGURE_2_11_0_RC0=$QEMU_CONFIGURE_2_11_0_RC0
     QEMU_CONFIGURE_GIT=$QEMU_CONFIGURE_2_10_0_RC2
+    QEMU_CONFIGURE_GIT=$QEMU_CONFIGURE_2_11_0_RC0
     MAKE_J="$(grep -c ^processor /proc/cpuinfo | grep -E '^[1-9]+[0-9]*$' || echo 1)" ; test $MAKE_J != "1" && make_j=$((MAKE_J - 1)) || make_j=$MAKE_J
     MAKE_J="-j${make_j}"
     pkg_install $OS
@@ -154,19 +174,30 @@ check_os() {
     fi
     vvv=$(echo $OS_VER | cut -b1)
     test $OS = "ubuntu" && vvv=$(echo $OS_VER | awk -F '.' '{print$1}')
-    arch=`uname -m`
-    test "$arch" = "i686" && arch=x86
-    test "$arch" = "i586" && arch=x86
-    test "$arch" = "i386" && arch=x86
-    test "$arch" = "i486" && arch=x86
-    test "$arch" = "x86_64" && arch=x64
-    test "$arch" = "armv7l" && arch=arm
-    test "$arch" = "armv6l" && arch=arm
     case $OS in
         "debian")
+        arch=`uname -m`
+        test "$arch" = "i686" && arch=x86
+        test "$arch" = "i386" && arch=x86
+        test "$arch" = "i486" && arch=x86
+        test "$arch" = "i586" && arch=x86
+        test "$arch" = "x86_64" && arch=x64
+        test "$arch" = "armv7l" && arch=arm
+        test "$arch" = "armv6l" && arch=arm
         case $vvv in
             "8")
                 :
+                case $arch in
+                    "arm")
+                        APT1="libbz2-dev"
+                    ;;
+                    "x86")
+                        APT1="libbz2-dev"
+                    ;;
+                    "x64")
+                        APT1="libbz2-dev"
+                    ;;
+                esac
             ;;
             "9")
                 case $arch in
@@ -185,6 +216,13 @@ check_os() {
         APT="$APT1"
         ;;
         "ubuntu")
+        arch=`uname -m`
+        test "$arch" = "i686" && arch=x86
+        test "$arch" = "i386" && arch=x86
+        test "$arch" = "i486" && arch=x86
+        test "$arch" = "i586" && arch=x86
+        test "$arch" = "x86_64" && arch=x64
+        test "$arch" = "armel7" && arch=arm
         case $vvv in
             "16")
                 APT1="libbz2-dev libgcrypt-dev"
@@ -211,31 +249,37 @@ check_root() {
 check_qemu_version() {
     case $1 in
         "2.8.0")
-        :
+            :
         ;;
         "2.8.1.1")
-        :
+            :
         ;;
         "2.10.0-rc0")
-        :
+            :
         ;;
         "2.10.0-rc1")
-        :
+            :
         ;;
         "2.10.0-rc2")
-        :
+            :
         ;;
         "2.10.0-rc3")
-        :
+            :
         ;;
         "2.10.0-rc4")
-        :
+            :
         ;;
         "2.10.0")
-        :
+            :
+        ;;
+        "2.10.1")
+            :
+        ;;
+        "2.11.0-rc0")
+            :
         ;;
         *)
-        echo -ne The QEMU $QEMU_VERSION version does not support configure\\n ; exit 1
+            echo -ne The QEMU $QEMU_VERSION version does not support configure\\n ; exit 1
         ;;
     esac
 }
@@ -447,6 +491,12 @@ configure() {
                 "2.10.0")
     ${QEMU_CONFIGURE_2_10_0}
                 ;;
+                "2.10.1")
+    ${QEMU_CONFIGURE_2_10_1}
+                ;;
+                "2.11.0-rc0")
+    ${QEMU_CONFIGURE_2_11_0_RC0}
+                ;;
             esac
         ;;
         qemu-git)
@@ -571,7 +621,7 @@ HELP
     esac
 }
 path
-VER=1.1
+VER=1.11
 for((i=1;i<=$#;i++)); do
     ini_cfg=${!i}
     ini_cfg_a=`echo $ini_cfg | sed -r s/^-?-?.*=//`
@@ -580,4 +630,4 @@ for((i=1;i<=$#;i++)); do
 done
 init $@
 exit
-AIXIAO.ME
+aixiao@aixiao.me.
