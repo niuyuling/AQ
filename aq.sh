@@ -251,42 +251,18 @@ check_root() {
 
 check_qemu_version() {
     case $1 in
-        "2.8.0")
-            :
-        ;;
-        "2.8.1.1")
-            :
-        ;;
-        "2.10.0-rc0")
-            :
-        ;;
-        "2.10.0-rc1")
-            :
-        ;;
-        "2.10.0-rc2")
-            :
-        ;;
-        "2.10.0-rc3")
-            :
-        ;;
-        "2.10.0-rc4")
-            :
-        ;;
-        "2.10.0")
-            :
-        ;;
-        "2.10.1")
-            :
-        ;;
-        "2.11.0-rc0")
-            :
-        ;;
-        "2.11.0-rc-4")
-            :
-        ;;
-        *)
-            echo -ne The QEMU $QEMU_VERSION version does not support configure\\n ; exit 1
-        ;;
+        "2.8.0") : ;;
+        "2.8.1.1") : ;;
+        "2.10.0-rc0") : ;;
+        "2.10.0-rc1") : ;;
+        "2.10.0-rc2") : ;;
+        "2.10.0-rc3") : ;;
+        "2.10.0-rc4") : ;;
+        "2.10.0") : ;;
+        "2.10.1") : ;;
+        "2.11.0-rc0") : ;;
+        "2.11.0-rc4") : ;;
+        *) echo -ne The QEMU $QEMU_VERSION version does not support configure\\n ; exit 1 ;;
     esac
 }
 
