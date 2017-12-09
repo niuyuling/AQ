@@ -32,6 +32,7 @@ init() {
     QEMU_VERSION="2.10.0"
     QEMU_VERSION="2.10.1"
     QEMU_VERSION="2.11.0-rc0"
+    QEMU_VERSION="2.11.0-rc4"
     QEMU_VERSION=${qemu_version:-"$QEMU_VERSION"}
     check_qemu_version $QEMU_VERSION
     QEMU_TAR_SRC=${PWD}/AQ/qemu-${QEMU_VERSION}.tar.xz
@@ -122,6 +123,7 @@ init() {
     QEMU_CONFIGURE_2_10_1=$QEMU_CONFIGURE_2_10_0_RC2
     QEMU_CONFIGURE_2_11_0_RC0=$QEMU_CONFIGURE_2_10_0_RC2
     QEMU_CONFIGURE_2_11_0_RC0=$QEMU_CONFIGURE_2_11_0_RC0
+    QEMU_CONFIGURE_2_11_0_RC4=$QEMU_CONFIGURE_2_11_0_RC0
     QEMU_CONFIGURE_GIT=$QEMU_CONFIGURE_2_10_0_RC2
     QEMU_CONFIGURE_GIT=$QEMU_CONFIGURE_2_11_0_RC0
     MAKE_J="$(grep -c ^processor /proc/cpuinfo | grep -E '^[1-9]+[0-9]*$' || echo 1)" ; test $MAKE_J != "1" && make_j=$((MAKE_J - 1)) || make_j=$MAKE_J
@@ -277,6 +279,9 @@ check_qemu_version() {
             :
         ;;
         "2.11.0-rc0")
+            :
+        ;;
+        "2.11.0-rc-4")
             :
         ;;
         *)
@@ -498,6 +503,9 @@ configure() {
                 "2.11.0-rc0")
     ${QEMU_CONFIGURE_2_11_0_RC0}
                 ;;
+                "2.11.0-rc4")
+    ${QEMU_CONFIGURE_2_11_0_RC4}
+                ;;
             esac
         ;;
         qemu-git)
@@ -622,7 +630,7 @@ HELP
     esac
 }
 path
-VER=1.11
+VER=1.12
 for((i=1;i<=$#;i++)); do
     ini_cfg=${!i}
     ini_cfg_a=`echo $ini_cfg | sed -r s/^-?-?.*=//`
