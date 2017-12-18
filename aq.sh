@@ -1,13 +1,23 @@
 #!/bin/bash
+#
 # AQ
-# Build Android qemu 
+# Build Android qemu
+#
 # statically linked binary program
 # Qemu Version: 2.10.0-rc2
+#
 # System: Debian stretch, System Architecture: armel
+# System: Debian stretch, System Architecture: x86
+# System: Debian stretch, System Architecture: x86_64
+# System: Debian jessie, System Architecture: armel
+# System: Debian jessie, System Architecture: x86
+# System: Debian jessie, System Architecture: x86_64
 # System: Ubuntu 16.10, System Architecture: x86_64
-# Write Time: 20170707
-# Modify Time 20170814 
-# AIXIAO.me
+#
+# Write Date: 20170707
+# Modify Date: 20171215
+# aixiao@aixiao.me.
+#
 
 #set -x
 path() {
@@ -29,6 +39,11 @@ init() {
     QEMU_VERSION="2.10.0-rc3"
     QEMU_VERSION="2.10.0-rc4"
     QEMU_VERSION="2.10.0"
+    QEMU_VERSION="2.10.1"
+    QEMU_VERSION="2.11.0-rc0"
+    QEMU_VERSION="2.11.0-rc4"
+    QEMU_VERSION="2.11.0-rc5"
+    QEMU_VERSION="2.11.0"
     QEMU_VERSION=${qemu_version:-"$QEMU_VERSION"}
     check_qemu_version $QEMU_VERSION
     QEMU_TAR_SRC=${PWD}/AQ/qemu-${QEMU_VERSION}.tar.xz
@@ -97,19 +112,40 @@ init() {
     --disable-virglrenderer --enable-xfsctl --enable-qom-cast-debug --enable-tools --disable-vxhs \
     --enable-crypto-afalg --enable-vhost-user\
     "
+    QEMU_CONFIGURE_2_11_0_RC0="
+    ./configure --prefix=${QEMU_PREFIX} --target-list=arm-linux-user,arm-softmmu,i386-linux-user,i386-softmmu \
+    --static \
+    --enable-system --enable-user --disable-bsd-user --enable-docs --enable-guest-agent --disable-guest-agent-msi --disable-pie --disable-modules --enable-debug-tcg --disable-debug-info --disable-sparse \
+    --disable-gnutls --disable-nettle --enable-gcrypt --disable-sdl --disable-gtk --disable-vte --disable-curses --enable-vnc --disable-vnc-sasl --enable-vnc-jpeg --enable-vnc-png --disable-cocoa \
+    --enable-virtfs --enable-mpath --disable-xen --disable-xen-pci-passthrough --disable-brlapi --disable-curl --enable-fdt --enable-bluez --enable-kvm --disable-hax \
+    --disable-rdma --disable-netmap --enable-linux-aio --enable-cap-ng --enable-attr --enable-vhost-net --disable-spice --disable-rbd --enable-libiscsi --disable-libnfs --disable-smartcard \
+    --disable-libusb --enable-live-block-migration --disable-usb-redir --disable-lzo --disable-snappy \
+    --enable-bzip2 \
+    --disable-seccomp --enable-coroutine-pool --disable-glusterfs --enable-tpm --disable-libssh2 --disable-numa --disable-tcmalloc --disable-jemalloc --enable-replication --enable-vhost-vsock --disable-ope    ngl \
+    --disable-virglrenderer --enable-xfsctl --enable-qom-cast-debug --enable-tools --disable-vxhs \
+    --enable-crypto-afalg --enable-vhost-user\
+    --enable-capstone\
+    "
     QEMU_CONFIGURE_2_10_0_RC1=$QEMU_CONFIGURE_2_10_0_RC0
     QEMU_CONFIGURE_2_10_0_RC2=$QEMU_CONFIGURE_2_10_0_RC2
     QEMU_CONFIGURE_2_10_0_RC3=$QEMU_CONFIGURE_2_10_0_RC2
     QEMU_CONFIGURE_2_10_0_RC4=$QEMU_CONFIGURE_2_10_0_RC2
     QEMU_CONFIGURE_2_10_0=$QEMU_CONFIGURE_2_10_0_RC2
+    QEMU_CONFIGURE_2_10_1=$QEMU_CONFIGURE_2_10_0_RC2
+    QEMU_CONFIGURE_2_11_0_RC0=$QEMU_CONFIGURE_2_10_0_RC2
+    QEMU_CONFIGURE_2_11_0_RC0=$QEMU_CONFIGURE_2_11_0_RC0
+    QEMU_CONFIGURE_2_11_0_RC4=$QEMU_CONFIGURE_2_11_0_RC0
+    QEMU_CONFIGURE_2_11_0_RC5=$QEMU_CONFIGURE_2_11_0_RC0
+    QEMU_CONFIGURE_2_11_0=$QEMU_CONFIGURE_2_11_0_RC0
     QEMU_CONFIGURE_GIT=$QEMU_CONFIGURE_2_10_0_RC2
+    QEMU_CONFIGURE_GIT=$QEMU_CONFIGURE_2_11_0_RC0
     MAKE_J="$(grep -c ^processor /proc/cpuinfo | grep -E '^[1-9]+[0-9]*$' || echo 1)" ; test $MAKE_J != "1" && make_j=$((MAKE_J - 1)) || make_j=$MAKE_J
     MAKE_J="-j${make_j}"
     pkg_install $OS
     if test "$GIT_QEMU" = "0" ; then
         git_clone
         install qemu-git
-        exit 1
+        exit 3
     fi
     src_download
     tar_extract
@@ -150,23 +186,34 @@ check_os() {
         echo -e SYSTEM: CENTOS $(uname -m) ${OS_VER}\\nKERNEL: $(uname -sr)
     else
         echo The system does not support
-        exit 1
+        exit 3
     fi
     vvv=$(echo $OS_VER | cut -b1)
     test $OS = "ubuntu" && vvv=$(echo $OS_VER | awk -F '.' '{print$1}')
-    arch=`uname -m`
-    test "$arch" = "i686" && arch=x86
-    test "$arch" = "i586" && arch=x86
-    test "$arch" = "i386" && arch=x86
-    test "$arch" = "i486" && arch=x86
-    test "$arch" = "x86_64" && arch=x64
-    test "$arch" = "armv7l" && arch=arm
-    test "$arch" = "armv6l" && arch=arm
     case $OS in
         "debian")
+        arch=`uname -m`
+        test "$arch" = "i686" && arch=x86
+        test "$arch" = "i386" && arch=x86
+        test "$arch" = "i486" && arch=x86
+        test "$arch" = "i586" && arch=x86
+        test "$arch" = "x86_64" && arch=x64
+        test "$arch" = "armv7l" && arch=arm
+        test "$arch" = "armv6l" && arch=arm
         case $vvv in
             "8")
                 :
+                case $arch in
+                    "arm")
+                        APT1="libbz2-dev"
+                    ;;
+                    "x86")
+                        APT1="libbz2-dev"
+                    ;;
+                    "x64")
+                        APT1="libbz2-dev"
+                    ;;
+                esac
             ;;
             "9")
                 case $arch in
@@ -185,6 +232,13 @@ check_os() {
         APT="$APT1"
         ;;
         "ubuntu")
+        arch=`uname -m`
+        test "$arch" = "i686" && arch=x86
+        test "$arch" = "i386" && arch=x86
+        test "$arch" = "i486" && arch=x86
+        test "$arch" = "i586" && arch=x86
+        test "$arch" = "x86_64" && arch=x64
+        test "$arch" = "armel7" && arch=arm
         case $vvv in
             "16")
                 APT1="libbz2-dev libgcrypt-dev"
@@ -196,7 +250,7 @@ check_os() {
         APT="$APT1"
         ;;
         "*")
-        echo -ne The system does not support\\n && exit 1
+        echo -ne The system does not support\\n && exit 3
         ;;
     esac
 }
@@ -204,39 +258,26 @@ check_os() {
 check_root() {
     if test $(id -u) != "0" || test $(id -g) != 0 ; then
         echo Root run $0 ?
-        exit 1
+        exit 3
     fi
 }
 
 check_qemu_version() {
     case $1 in
-        "2.8.0")
-        :
-        ;;
-        "2.8.1.1")
-        :
-        ;;
-        "2.10.0-rc0")
-        :
-        ;;
-        "2.10.0-rc1")
-        :
-        ;;
-        "2.10.0-rc2")
-        :
-        ;;
-        "2.10.0-rc3")
-        :
-        ;;
-        "2.10.0-rc4")
-        :
-        ;;
-        "2.10.0")
-        :
-        ;;
-        *)
-        echo -ne The QEMU $QEMU_VERSION version does not support configure\\n ; exit 1
-        ;;
+        "2.8.0")      : ;;
+        "2.8.1.1")    : ;;
+        "2.10.0-rc0") : ;;
+        "2.10.0-rc1") : ;;
+        "2.10.0-rc2") : ;;
+        "2.10.0-rc3") : ;;
+        "2.10.0-rc4") : ;;
+        "2.10.0")     : ;;
+        "2.10.1")     : ;;
+        "2.11.0-rc0") : ;;
+        "2.11.0-rc4") : ;;
+        "2.11.0-rc5") : ;;
+        "2.11.0")     : ;;
+        *)            echo -ne The QEMU $QEMU_VERSION version does not support configure\\n ; exit 3 ;;
     esac
 }
 
@@ -250,7 +291,7 @@ bg_wait() {
     BGEXEC_LOG_STATUS_FILE=/tmp/QEMU.log
     bg_exec $@ >> $BGEXEC_LOG_STATUS_FILE 2>&1 &
     wait_pid $!
-    ! test -f $BGEXEC_EXIT_STATUS_FILE && exit 2
+    ! test -f $BGEXEC_EXIT_STATUS_FILE && exit 3
 }
 
 wait_pid() {
@@ -287,7 +328,7 @@ pkg_install() {
     DEBIAN_FRONTEND=noninteractive bg_wait apt-get -qqy --force-yes install build-essential git-core $APT
     if test $(cat $BGEXEC_EXIT_STATUS_FILE) != "0" ; then
         echo -ne fail\\n-----------------------------\\n
-        exit 1
+        exit 3
     else
         echo -ne done\\n
     fi
@@ -295,7 +336,7 @@ pkg_install() {
     DEBIAN_FRONTEND=noninteractive bg_wait apt-get -qqy --force-yes build-dep qemu-system
     if test $(cat $BGEXEC_EXIT_STATUS_FILE) != "0" ; then
         echo -ne fail\\n-----------------------------\\n
-        exit 1
+        exit 3
     fi
     echo -ne done\\n-----------------------------\\n
         ;;
@@ -311,7 +352,7 @@ pkg_install() {
     DEBIAN_FRONTEND=noninteractive bg_wait apt-get -qqy --force-yes install build-essential git $APT
     if test $(cat $BGEXEC_EXIT_STATUS_FILE) != "0" ; then
         echo -ne fail\\n-----------------------------\\n
-        exit 1
+        exit 3
     else
         echo -ne done\\n
     fi
@@ -319,7 +360,7 @@ pkg_install() {
     DEBIAN_FRONTEND=noninteractive bg_wait apt-get -qqy --force-yes build-dep qemu-system
     if test $(cat $BGEXEC_EXIT_STATUS_FILE) != "0" ; then
         echo -ne fail\\n-----------------------------\\n
-        exit 1
+        exit 3
     else
         echo -ne done\\n-----------------------------\\n
     fi
@@ -333,7 +374,7 @@ src_download() {
         bg_wait wget -q -T 120 -O ${QEMU_TAR_SRC}_tmp ${QEMU_TAR_SRC_USR}
         if test $(cat $BGEXEC_EXIT_STATUS_FILE) != "0" || ! test -f ${QEMU_TAR_SRC}_tmp ; then
             echo -ne fail\\n
-            test -f ${QEMU_TAR_SRC}_tmp && rm -f ${QEMU_TAR_SRC}_tmp && exit 2
+            test -f ${QEMU_TAR_SRC}_tmp && rm -f ${QEMU_TAR_SRC}_tmp && exit 3
         else
             echo -ne done\\n
             mv ${QEMU_TAR_SRC}_tmp ${QEMU_TAR_SRC}
@@ -347,7 +388,7 @@ tar_extract() {
         tar -axf $QEMU_TAR_SRC -C $SRC >> $BGEXEC_LOG_STATUS_FILE 2>&1
         if ! test -d $QEMU_SRC_DIR ; then
             echo -ne \\b\\b\\b\\bfail\\n
-            exit 2
+            exit 3
         else
             echo -ne \\b\\b\\b\\bdone\\n
         fi
@@ -360,7 +401,7 @@ tar_create() {
         tar -cjf $QEMU_BIN_TAR_CREATE_SRC $QEMU_PREFIX >> $BGEXEC_LOG_STATUS_FILE 2>&1
         if ! test -f $QEMU_BIN_TAR_CREATE_SRC ; then
             echo -ne \\b\\b\\b\\bfail\\n
-            exit 2
+            exit 3
         else
             echo -ne \\b\\b\\b\\bdone\\n
         fi
@@ -385,18 +426,18 @@ git_clone() {
         bg_wait git clone git://git.qemu-project.org/qemu.git
         if test $(cat $BGEXEC_EXIT_STATUS_FILE) != "0" || ! test -d $QEMU_GIT_SRC_DIR ; then
             echo -ne fail\\n
-            exit 2
+            exit 3
         fi
         cd $QEMU_GIT_SRC_DIR
         bg_wait git submodule init
         if test $(cat $BGEXEC_EXIT_STATUS_FILE) != "0" ; then
             echo -ne fail\\n
-            exit 2
+            exit 3
         fi
         bg_wait git submodule update --recursive
         if test $(cat $BGEXEC_EXIT_STATUS_FILE) != "0" || ! test -f $QEMU_GIT_SRC_DIR/configure ; then
             echo -ne fail\\n
-            exit 2
+            exit 3
         else
             echo -ne done\\n-----------------------------\\n
         fi
@@ -410,7 +451,7 @@ c_configure() {
     local l=$(grep -ne "static void version(void)" vl.c | cut -d : -f1)
     local l=$((l+2))
     if test "$(grep "AIXIAO.ME" vl.c ; echo $?)" = "1" ; then
-        eval "sed -i ${a}${l}i printf(${c}${b}AIXIAO.ME Compile Links, EMAIL 1605227279@QQ.COM${c}${c}n${c}${b});${a} vl.c"
+        eval "sed -i ${a}${l}i printf(${c}${b}AIXIAO.ME Compile Links, EMAIL AIXIAO@AIXIAO.ME${c}${c}n${c}${b});${a} vl.c"
     else
         exit 3
     fi
@@ -420,33 +461,20 @@ configure() {
     case $1 in
         qemu)
             case $2 in
-                "2.8.0")
-    ${QEMU_CONFIGURE_2_8_0}
-                ;;
-                "2.8.1.1")
-    ${QEMU_CONFIGURE_2_8_1_1}
-                ;;
-                "2.9.0")
-    :
-                ;;
-                "2.10.0-rc0")
-    ${QEMU_CONFIGURE_2_10_0_RC0}
-                ;;
-                "2.10.0-rc1")
-    ${QEMU_CONFIGURE_2_10_0_RC1}
-                ;;
-                "2.10.0-rc2")
-    ${QEMU_CONFIGURE_2_10_0_RC2}
-                ;;
-                "2.10.0-rc3")
-    ${QEMU_CONFIGURE_2_10_0_RC3}
-                ;;
-                "2.10.0-rc4")
-    ${QEMU_CONFIGURE_2_10_0_RC4}
-                ;;
-                "2.10.0")
-    ${QEMU_CONFIGURE_2_10_0}
-                ;;
+                "2.8.0")      ${QEMU_CONFIGURE_2_8_0} ;;
+                "2.8.1.1")    ${QEMU_CONFIGURE_2_8_1_1} ;;
+                "2.9.0") : ;;
+                "2.10.0-rc0") ${QEMU_CONFIGURE_2_10_0_RC0} ;;
+                "2.10.0-rc1") ${QEMU_CONFIGURE_2_10_0_RC1} ;;
+                "2.10.0-rc2") ${QEMU_CONFIGURE_2_10_0_RC2} ;;
+                "2.10.0-rc3") ${QEMU_CONFIGURE_2_10_0_RC3} ;;
+                "2.10.0-rc4") ${QEMU_CONFIGURE_2_10_0_RC4} ;;
+                "2.10.0")     ${QEMU_CONFIGURE_2_10_0} ;;
+                "2.10.1")     ${QEMU_CONFIGURE_2_10_1} ;;
+                "2.11.0-rc0") ${QEMU_CONFIGURE_2_11_0_RC0} ;;
+                "2.11.0-rc4") ${QEMU_CONFIGURE_2_11_0_RC4} ;;
+                "2.11.0-rc5") ${QEMU_CONFIGURE_2_11_0_RC5} ;;
+                "2.11.0")     ${QEMU_CONFIGURE_2_11_0} ;;
             esac
         ;;
         qemu-git)
@@ -538,7 +566,7 @@ install() {
 init_exec() {
     case "$1" in
         "--help")
-            cat <<HELP
+            cat << HELP
 ---------------------------
             AQ
 Android Qemu
@@ -557,7 +585,7 @@ Author: aixiao@aixiao.me
 --help
 ---------------------------
 HELP
-            exit
+            exit 3
         ;;
         "--prefix")
             test "$2" != "" && QEMU_PREFIX="$2"
@@ -571,7 +599,7 @@ HELP
     esac
 }
 path
-VER=1.1
+VER=1.12
 for((i=1;i<=$#;i++)); do
     ini_cfg=${!i}
     ini_cfg_a=`echo $ini_cfg | sed -r s/^-?-?.*=//`
@@ -580,4 +608,4 @@ for((i=1;i<=$#;i++)); do
 done
 init $@
 exit
-AIXIAO.ME
+aixiao@aixiao.me.
