@@ -15,7 +15,7 @@
 # System: Ubuntu 16.10, System Architecture: x86_64
 #
 # Write Date: 20170707
-# Modify Date: 20171215
+# Modify Date: 20180227 
 # aixiao@aixiao.me.
 #
 
@@ -44,6 +44,7 @@ init() {
     QEMU_VERSION="2.11.0-rc4"
     QEMU_VERSION="2.11.0-rc5"
     QEMU_VERSION="2.11.0"
+    QEMU_VERSION="2.11.1"
     QEMU_VERSION=${qemu_version:-"$QEMU_VERSION"}
     check_qemu_version $QEMU_VERSION
     QEMU_TAR_SRC=${PWD}/AQ/qemu-${QEMU_VERSION}.tar.xz
@@ -57,9 +58,7 @@ init() {
 
     --enable-docs --enable-guest-agent \
 
-    --enable-gcrypt --enable-vnc --enable-vnc-jpeg --enable-vnc-png \
-    --enable-fdt --enable-bluez --enable-kvm \
-    --enable-colo --enable-linux-aio --enable-cap-ng --enable-attr --enable-vhost-net --enable-bzip2 \
+    --enable-gcrypt --enable-vnc --enable-vnc-jpeg --enable-vnc-png --enable-fdt --enable-bluez --enable-kvm --enable-colo --enable-linux-aio --enable-cap-ng --enable-attr --enable-vhost-net --enable-bzip2 \
 
     --enable-coroutine-pool --enable-tpm --disable-libssh2 --enable-replication \
     --disable-libiscsi --disable-libnfs --disable-libusb --disable-smartcard --disable-usb-redir --disable-glusterfs --disable-seccomp \
@@ -71,8 +70,7 @@ init() {
     --enable-docs --enable-guest-agent \
 
     --enable-gcrypt --enable-vnc --enable-vnc-jpeg --enable-vnc-png \
-    --enable-fdt --enable-bluez --enable-kvm \
-    --enable-colo --enable-linux-aio --enable-cap-ng --enable-attr --enable-vhost-net --enable-bzip2 \
+    --enable-fdt --enable-bluez --enable-kvm --enable-colo --enable-linux-aio --enable-cap-ng --enable-attr --enable-vhost-net --enable-bzip2 \
 
     --enable-coroutine-pool --enable-tpm --disable-libssh2 --enable-replication \
     --disable-libiscsi --disable-libnfs --disable-libusb --disable-smartcard --disable-usb-redir --disable-glusterfs --disable-seccomp \
@@ -85,12 +83,8 @@ init() {
     --enable-guest-agent \
 
     --disable-sdl --disable-gtk --disable-vte --disable-curses --disable-cocoa \
-    --enable-gcrypt \
-    --enable-vnc --enable-vnc-jpeg --enable-vnc-png \
-    --disable-virtfs --enable-fdt --enable-bluez \
-    --enable-kvm --disable-hax \
-    --enable-linux-aio --enable-cap-ng --enable-attr --enable-vhost-net --enable-libiscsi --disable-libnfs --disable-smartcard --disable-libusb --enable-live-block-migration --disable-usb-redir \
-    --enable-bzip2 \
+    --enable-gcrypt --enable-vnc --enable-vnc-jpeg --enable-vnc-png --disable-virtfs --enable-fdt --enable-bluez --enable-kvm --disable-hax \
+    --enable-linux-aio --enable-cap-ng --enable-attr --enable-vhost-net --enable-libiscsi --disable-libnfs --disable-smartcard --disable-libusb --enable-live-block-migration --disable-usb-redir --enable-bzip2 \
 
     --enable-coroutine-pool --disable-glusterfs --enable-tpm --enable-libssh2 --enable-replication --enable-vhost-vsock --enable-xfsctl --enable-tools \
     --enable-crypto-afalg \
@@ -102,7 +96,6 @@ init() {
     --enable-system --enable-user --disable-bsd-user --enable-docs --enable-guest-agent --disable-guest-agent-msi --disable-pie --disable-modules --enable-debug-tcg --disable-debug-info --disable-sparse \
 
     --disable-gnutls --disable-nettle --enable-gcrypt --disable-sdl --disable-gtk --disable-vte --disable-curses --enable-vnc --disable-vnc-sasl --enable-vnc-jpeg --enable-vnc-png --disable-cocoa \
-
     --enable-virtfs --disable-xen --disable-xen-pci-passthrough --disable-brlapi --disable-curl --enable-fdt --enable-bluez --enable-kvm --disable-hax \
     --disable-rdma --disable-netmap --enable-linux-aio --enable-cap-ng --enable-attr --enable-vhost-net --disable-spice --disable-rbd --enable-libiscsi --disable-libnfs --disable-smartcard \
     --disable-libusb --enable-live-block-migration --disable-usb-redir --disable-lzo --disable-snappy \
@@ -116,15 +109,27 @@ init() {
     ./configure --prefix=${QEMU_PREFIX} --target-list=arm-linux-user,arm-softmmu,i386-linux-user,i386-softmmu \
     --static \
     --enable-system --enable-user --disable-bsd-user --enable-docs --enable-guest-agent --disable-guest-agent-msi --disable-pie --disable-modules --enable-debug-tcg --disable-debug-info --disable-sparse \
+
     --disable-gnutls --disable-nettle --enable-gcrypt --disable-sdl --disable-gtk --disable-vte --disable-curses --enable-vnc --disable-vnc-sasl --enable-vnc-jpeg --enable-vnc-png --disable-cocoa \
     --enable-virtfs --enable-mpath --disable-xen --disable-xen-pci-passthrough --disable-brlapi --disable-curl --enable-fdt --enable-bluez --enable-kvm --disable-hax \
     --disable-rdma --disable-netmap --enable-linux-aio --enable-cap-ng --enable-attr --enable-vhost-net --disable-spice --disable-rbd --enable-libiscsi --disable-libnfs --disable-smartcard \
-    --disable-libusb --enable-live-block-migration --disable-usb-redir --disable-lzo --disable-snappy \
-    --enable-bzip2 \
-    --disable-seccomp --enable-coroutine-pool --disable-glusterfs --enable-tpm --disable-libssh2 --disable-numa --disable-tcmalloc --disable-jemalloc --enable-replication --enable-vhost-vsock --disable-ope    ngl \
-    --disable-virglrenderer --enable-xfsctl --enable-qom-cast-debug --enable-tools --disable-vxhs \
-    --enable-crypto-afalg --enable-vhost-user\
-    --enable-capstone\
+    --disable-libusb --enable-live-block-migration --disable-usb-redir --disable-lzo --disable-snappy --enable-bzip2 \
+
+    --disable-seccomp --enable-coroutine-pool --disable-glusterfs --enable-tpm --disable-libssh2 --disable-numa --disable-tcmalloc --disable-jemalloc --enable-replication --enable-vhost-vsock --disable-opengl \
+    --disable-virglrenderer --enable-xfsctl --enable-qom-cast-debug --enable-tools --disable-vxhs --enable-crypto-afalg --enable-vhost-user --enable-capstone\
+    "
+    QEMU_CONFIGURE_2_11_1="
+    ./configure --prefix=${QEMU_PREFIX} --target-list=arm-linux-user,arm-softmmu,i386-linux-user,i386-softmmu \
+    --static \
+    --enable-system --enable-user --disable-bsd-user --enable-docs --enable-guest-agent --disable-guest-agent-msi --disable-pie --disable-modules --enable-debug-tcg --disable-debug-info --disable-sparse \
+
+    --disable-gnutls --disable-nettle --enable-gcrypt --disable-sdl --disable-gtk --disable-vte --disable-curses --enable-vnc --disable-vnc-sasl --enable-vnc-jpeg --enable-vnc-png --disable-cocoa \
+    --enable-virtfs --disable-mpath --disable-xen --disable-xen-pci-passthrough --disable-brlapi --disable-curl --enable-fdt --enable-bluez --enable-kvm --disable-hax \
+    --disable-rdma --enable-vde --disable-netmap --enable-linux-aio --enable-cap-ng --enable-attr --enable-vhost-net --disable-spice --disable-rbd --enable-libiscsi --disable-libnfs --disable-smartcard \
+    --disable-libusb --enable-live-block-migration --disable-usb-redir --disable-lzo --disable-snappy --enable-bzip2 \
+
+    --disable-seccomp --enable-coroutine-pool --disable-glusterfs --enable-tpm --disable-libssh2 --disable-numa --disable-tcmalloc --disable-jemalloc --enable-replication --enable-vhost-vsock --disable-opengl \
+    --disable-virglrenderer --enable-xfsctl --enable-qom-cast-debug --enable-tools --disable-vxhs --enable-crypto-afalg --enable-vhost-user --enable-capstone \
     "
     QEMU_CONFIGURE_2_10_0_RC1=$QEMU_CONFIGURE_2_10_0_RC0
     QEMU_CONFIGURE_2_10_0_RC2=$QEMU_CONFIGURE_2_10_0_RC2
@@ -137,6 +142,7 @@ init() {
     QEMU_CONFIGURE_2_11_0_RC4=$QEMU_CONFIGURE_2_11_0_RC0
     QEMU_CONFIGURE_2_11_0_RC5=$QEMU_CONFIGURE_2_11_0_RC0
     QEMU_CONFIGURE_2_11_0=$QEMU_CONFIGURE_2_11_0_RC0
+    QEMU_CONFIGURE_2_11_1=$QEMU_CONFIGURE_2_11_1
     QEMU_CONFIGURE_GIT=$QEMU_CONFIGURE_2_10_0_RC2
     QEMU_CONFIGURE_GIT=$QEMU_CONFIGURE_2_11_0_RC0
     MAKE_J="$(grep -c ^processor /proc/cpuinfo | grep -E '^[1-9]+[0-9]*$' || echo 1)" ; test $MAKE_J != "1" && make_j=$((MAKE_J - 1)) || make_j=$MAKE_J
@@ -277,6 +283,7 @@ check_qemu_version() {
         "2.11.0-rc4") : ;;
         "2.11.0-rc5") : ;;
         "2.11.0")     : ;;
+        "2.11.1")     : ;;
         *)            echo -ne The QEMU $QEMU_VERSION version does not support configure\\n ; exit 3 ;;
     esac
 }
@@ -463,7 +470,6 @@ configure() {
             case $2 in
                 "2.8.0")      ${QEMU_CONFIGURE_2_8_0} ;;
                 "2.8.1.1")    ${QEMU_CONFIGURE_2_8_1_1} ;;
-                "2.9.0") : ;;
                 "2.10.0-rc0") ${QEMU_CONFIGURE_2_10_0_RC0} ;;
                 "2.10.0-rc1") ${QEMU_CONFIGURE_2_10_0_RC1} ;;
                 "2.10.0-rc2") ${QEMU_CONFIGURE_2_10_0_RC2} ;;
@@ -475,6 +481,7 @@ configure() {
                 "2.11.0-rc4") ${QEMU_CONFIGURE_2_11_0_RC4} ;;
                 "2.11.0-rc5") ${QEMU_CONFIGURE_2_11_0_RC5} ;;
                 "2.11.0")     ${QEMU_CONFIGURE_2_11_0} ;;
+                "2.11.1")     ${QEMU_CONFIGURE_2_11_1} ;;
             esac
         ;;
         qemu-git)
@@ -565,7 +572,7 @@ install() {
 
 init_exec() {
     case "$1" in
-        "--help")
+        "--help"|"-h")
             cat << HELP
 ---------------------------
             AQ
@@ -599,7 +606,7 @@ HELP
     esac
 }
 path
-VER=1.12
+VER=1.13
 for((i=1;i<=$#;i++)); do
     ini_cfg=${!i}
     ini_cfg_a=`echo $ini_cfg | sed -r s/^-?-?.*=//`
