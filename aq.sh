@@ -45,6 +45,7 @@ init() {
     QEMU_VERSION="2.11.0-rc5"
     QEMU_VERSION="2.11.0"
     QEMU_VERSION="2.11.1"
+    QEMU_VERSION="2.12.0-rc4"
     QEMU_VERSION=${qemu_version:-"$QEMU_VERSION"}
     check_qemu_version $QEMU_VERSION
     QEMU_TAR_SRC=${PWD}/AQ/qemu-${QEMU_VERSION}.tar.xz
@@ -131,6 +132,19 @@ init() {
     --disable-seccomp --enable-coroutine-pool --disable-glusterfs --enable-tpm --disable-libssh2 --disable-numa --disable-tcmalloc --disable-jemalloc --enable-replication --enable-vhost-vsock --disable-opengl \
     --disable-virglrenderer --enable-xfsctl --enable-qom-cast-debug --enable-tools --disable-vxhs --enable-crypto-afalg --enable-vhost-user --enable-capstone \
     "
+    QEMU_CONFIGURE_2_12_0_RC4="
+./configure --prefix=${QEMU_PREFIX}\
+    --static\
+    --enable-malloc-trim\
+    --enable-system --enable-user --disable-bsd-user --enable-docs --enable-guest-agent --disable-guest-agent-msi --disable-pie --disable-modules --enable-debug-tcg --disable-debug-info --disable-sparse\
+    --disable-gnutls --disable-nettle --enable-gcrypt --disable-sdl --disable-gtk --disable-vte --disable-curses --enable-vnc --disable-vnc-sasl --enable-vnc-jpeg --enable-vnc-png --disable-cocoa\
+    --enable-virtfs --disable-mpath --disable-xen --disable-xen-pci-passthrough --disable-brlapi --disable-curl --disable-membarrier --enable-fdt --enable-bluez --enable-kvm --disable-hax\
+    --disable-hvf --disable-whpx\
+    --disable-rdma --enable-vde --disable-netmap --enable-linux-aio --enable-cap-ng --enable-attr --enable-vhost-net --enable-vhost-crypto --disable-spice --disable-rbd --enable-libiscsi --disable-libnfs --disable-smartcard\
+    --disable-libusb --enable-live-block-migration --disable-usb-redir --disable-lzo --disable-snappy --enable-bzip2\
+    --disable-seccomp --enable-coroutine-pool --disable-glusterfs --enable-tpm --disable-libssh2 --disable-numa --enable-libxml2 --disable-tcmalloc --disable-jemalloc --enable-replication --enable-vhost-vsock --disable-opengl\
+    --disable-virglrenderer --enable-xfsctl --enable-qom-cast-debug --enable-tools --disable-vxhs --enable-crypto-afalg --enable-vhost-user --enable-capstone\
+    "
     QEMU_CONFIGURE_2_10_0_RC1=$QEMU_CONFIGURE_2_10_0_RC0
     QEMU_CONFIGURE_2_10_0_RC2=$QEMU_CONFIGURE_2_10_0_RC2
     QEMU_CONFIGURE_2_10_0_RC3=$QEMU_CONFIGURE_2_10_0_RC2
@@ -143,8 +157,8 @@ init() {
     QEMU_CONFIGURE_2_11_0_RC5=$QEMU_CONFIGURE_2_11_0_RC0
     QEMU_CONFIGURE_2_11_0=$QEMU_CONFIGURE_2_11_0_RC0
     QEMU_CONFIGURE_2_11_1=$QEMU_CONFIGURE_2_11_1
-    QEMU_CONFIGURE_GIT=$QEMU_CONFIGURE_2_10_0_RC2
-    QEMU_CONFIGURE_GIT=$QEMU_CONFIGURE_2_11_0_RC0
+    QEMU_CONFIGURE_2_12_0_RC4=$QEMU_CONFIGURE_2_12_0_RC4
+    QEMU_CONFIGURE_GIT=$QEMU_CONFIGURE_2_12_0_RC4
     MAKE_J="$(grep -c ^processor /proc/cpuinfo | grep -E '^[1-9]+[0-9]*$' || echo 1)" ; test $MAKE_J != "1" && make_j=$((MAKE_J - 1)) || make_j=$MAKE_J
     MAKE_J="-j${make_j}"
     pkg_install $OS
@@ -211,26 +225,26 @@ check_os() {
                 :
                 case $arch in
                     "arm")
-                        APT1="libbz2-dev"
+                        APT1="libbz2-dev libxml2-dev liblzma-dev"
                     ;;
                     "x86")
-                        APT1="libbz2-dev"
+                        APT1="libbz2-dev libxml2-dev liblzma-dev"
                     ;;
                     "x64")
-                        APT1="libbz2-dev"
+                        APT1="libbz2-dev libxml2-dev liblzma-dev"
                     ;;
                 esac
             ;;
             "9")
                 case $arch in
                     "arm")
-                         APT1="libbz2-dev"
+                         APT1="libbz2-dev libxml2-dev liblzma-dev"
                      ;;
                      "x86")
-                         APT1="libbz2-dev"
+                         APT1="libbz2-dev libxml2-dev liblzma-dev"
                      ;;
                      "x64")
-                         APT1="libbz2-dev"
+                         APT1="libbz2-dev libxml2-dev liblzma-dev"
                      ;;
                 esac
             ;;
@@ -284,6 +298,7 @@ check_qemu_version() {
         "2.11.0-rc5") : ;;
         "2.11.0")     : ;;
         "2.11.1")     : ;;
+        "2.12.0-rc4") : ;;
         *)            echo -ne The QEMU $QEMU_VERSION version does not support configure\\n ; exit 3 ;;
     esac
 }
@@ -482,6 +497,7 @@ configure() {
                 "2.11.0-rc5") ${QEMU_CONFIGURE_2_11_0_RC5} ;;
                 "2.11.0")     ${QEMU_CONFIGURE_2_11_0} ;;
                 "2.11.1")     ${QEMU_CONFIGURE_2_11_1} ;;
+                "2.12.0-rc4") ${QEMU_CONFIGURE_2_12_0_RC4} ;;
             esac
         ;;
         qemu-git)
@@ -606,7 +622,7 @@ HELP
     esac
 }
 path
-VER=1.13
+VER=1.14
 for((i=1;i<=$#;i++)); do
     ini_cfg=${!i}
     ini_cfg_a=`echo $ini_cfg | sed -r s/^-?-?.*=//`
