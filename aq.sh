@@ -50,6 +50,7 @@ init() {
     QEMU_VERSION="2.12.0"
     QEMU_VERSION="3.0.0"
     QEMU_VERSION="4.0.0-rc2"
+    QEMU_VERSION="4.0.0"
     QEMU_VERSION=${qemu_version:-"$QEMU_VERSION"}
     check_qemu_version $QEMU_VERSION
     QEMU_TAR_SRC=${PWD}/AQ/qemu-${QEMU_VERSION}.tar.xz
@@ -122,7 +123,8 @@ init() {
     QEMU_CONFIGURE_2_12_0=$QEMU_CONFIGURE_2_12_0_RC4
     QEMU_CONFIGURE_3_0_0=$QEMU_CONFIGURE_3_0_0
     QEMU_CONFIGURE_4_0_0_RC2=$QEMU_CONFIGURE_4_0_0_RC2
-    QEMU_CONFIGURE_GIT=$QEMU_CONFIGURE_3_0_0
+    QEMU_CONFIGURE_4_0_0=$QEMU_CONFIGURE_4_0_0_RC2
+    QEMU_CONFIGURE_GIT=$QEMU_CONFIGURE_4_0_0
 
     MAKE_J="$(grep -c ^processor /proc/cpuinfo | grep -E '^[1-9]+[0-9]*$' || echo 1)" ; test $MAKE_J != "1" && make_j=$((MAKE_J - 1)) || make_j=$MAKE_J
     MAKE_J="-j${make_j}"
@@ -214,7 +216,6 @@ initdate() {
 helloworld() {
     cat <<EOF
 -----------------------------
-Web: AIXIAO.ME
 AQ: $VER for $OS $vvv
 Qq: 1605227279
 Qemail: 1605227279@qq.com
@@ -336,6 +337,7 @@ check_qemu_version() {
         "2.12.0")     : ;;
         "3.0.0")      : ;;
         "4.0.0-rc2")  : ;;
+        "4.0.0")      : ;;
         *)            echo -ne The QEMU $QEMU_VERSION version does not support configure\\n ; exit 3 ;;
     esac
 }
@@ -542,6 +544,7 @@ configure() {
                 "2.12.0")     ${QEMU_CONFIGURE_2_12_0_RC4} ;;
                 "3.0.0")      ${QEMU_CONFIGURE_3_0_0} ;;
                 "4.0.0-rc2")  ${QEMU_CONFIGURE_4_0_0_RC2} ;;
+                "4.0.0")      ${QEMU_CONFIGURE_4_0_0_RC2} ;;
             esac
         ;;
         qemu-git)
